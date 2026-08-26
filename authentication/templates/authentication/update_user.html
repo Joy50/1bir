@@ -1,0 +1,118 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}Edit User · 1 BIR{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header">
+  <div class="section-eyebrow">Admin // Accounts</div>
+  <h1>Edit User</h1>
+  <p class="text-secondary mb-0">Update account details for {{ object.name }}.</p>
+</div>
+
+<div class="card form-panel">
+  <div class="card-body p-4">
+    <form method="post" enctype="multipart/form-data" novalidate class="form-ledger">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+          {{ form.username }}
+          {% if form.username.errors %}
+            <div class="text-danger small">{{ form.username.errors }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-6 mb-3">
+          <label for="{{ form.name.id_for_label }}" class="form-label">Full Name</label>
+          {{ form.name }}
+          {% if form.name.errors %}
+            <div class="text-danger small">{{ form.name.errors }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-6 mb-3">
+          <label for="{{ form.rank.id_for_label }}" class="form-label">Rank</label>
+          {{ form.rank }}
+          {% if form.rank.errors %}
+            <div class="text-danger small">{{ form.rank.errors }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-6 mb-3">
+          <label for="{{ form.appointment.id_for_label }}" class="form-label">Appointment</label>
+          {{ form.appointment }}
+          {% if form.appointment.errors %}
+            <div class="text-danger small">{{ form.appointment.errors }}</div>
+          {% endif %}
+        </div>
+        <div class="col-12 mb-3">
+          <label class="form-label">Organizations</label>
+          {{ form.organizations }}
+          {% if form.organizations.help_text %}
+            <div class="form-text">{{ form.organizations.help_text }}</div>
+          {% endif %}
+          {% if form.organizations.errors %}
+            <div class="text-danger small">{{ form.organizations.errors }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-6 mb-3">
+          <label for="{{ form.role.id_for_label }}" class="form-label">Role</label>
+          {{ form.role }}
+          {% if form.role.errors %}
+            <div class="text-danger small">{{ form.role.errors }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-6 mb-3 d-flex align-items-end">
+          <div class="form-check mb-2">
+            {{ form.is_active }}
+            <label for="{{ form.is_active.id_for_label }}" class="form-check-label">Active</label>
+          </div>
+        </div>
+        {% if form.is_active.errors %}
+          <div class="col-12">
+            <div class="text-danger small">{{ form.is_active.errors }}</div>
+          </div>
+        {% endif %}
+        <div class="col-md-6 mb-3">
+          <label for="{{ form.password.id_for_label }}" class="form-label">New Password</label>
+          {{ form.password }}
+          {% if form.password.help_text %}
+            <div class="form-text">{{ form.password.help_text }}</div>
+          {% endif %}
+          {% if form.password.errors %}
+            <div class="text-danger small">{{ form.password.errors }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-6 mb-3">
+          <label for="{{ form.password_confirm.id_for_label }}" class="form-label">Confirm Password</label>
+          {{ form.password_confirm }}
+          {% if form.password_confirm.errors %}
+            <div class="text-danger small">{{ form.password_confirm.errors }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-6 mb-3">
+          <label for="{{ form.sign.id_for_label }}" class="form-label">Signature</label>
+          {{ form.sign }}
+          {% if form.sign.errors %}
+            <div class="text-danger small">{{ form.sign.errors }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-6 mb-3">
+          <label for="{{ form.photo.id_for_label }}" class="form-label">Photo</label>
+          {{ form.photo }}
+          {% if form.photo.errors %}
+            <div class="text-danger small">{{ form.photo.errors }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 mt-3">
+        <button type="submit" class="btn btn-bir">Save Changes</button>
+        <a href="{% url 'authentication:manage_users' %}" class="btn btn-outline-secondary">Back</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

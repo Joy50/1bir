@@ -1,0 +1,6 @@
+<div class="section-header text-center mt-4"><h2>{{ title }}</h2></div>
+<div class="card form-panel mb-4"><div class="card-body p-0"><div class="table-responsive"><table class="table table-bordered mb-0 text-center align-middle">
+  <thead><tr><th>{% if selected_organization %}Cat{% else %}Coy{% endif %}</th><th>Posted</th><th>Exempted</th><th>Eligible</th><th>Not Atnd</th><th>Atnd</th>{% if show_results %}<th>Passed</th><th>Failed</th>{% endif %}<th>%</th><th>Rmk</th></tr></thead>
+  <tbody>{% for row in rows %}<tr><th>{{ row.label }}</th><td>{{ row.posted }}</td><td>{{ row.exempted }}</td><td>{{ row.eligible }}</td><td>{{ row.not_attended }}</td><td>{{ row.attended }}</td>{% if show_results %}<td>{{ row.passed }}</td><td>{{ row.failed }}</td>{% endif %}<td>{{ row.percentage }}%</td><td></td></tr>{% endfor %}
+  <tr class="fw-bold"><th>Total</th><td>{{ total.posted }}</td><td>{{ total.exempted }}</td><td>{{ total.eligible }}</td><td>{{ total.not_attended }}</td><td>{{ total.attended }}</td>{% if show_results %}<td>{{ total.passed }}</td><td>{{ total.failed }}</td>{% endif %}<td>{{ total.percentage }}%</td><td></td></tr></tbody>
+</table></div></div></div>

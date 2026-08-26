@@ -1,0 +1,16 @@
+{% extends "authentication/dashboard_base.html" %}
+{% block title %}G Matter · 1 BIR{% endblock %}
+{% block dashboard_content %}
+<div class="section-header">
+  <div class="section-eyebrow">G Matter</div>
+  <h1>Training States</h1>
+</div>
+<div class="row g-3" aria-label="Training states">
+  <div class="col-md-6 col-xl-4"><a href="{% url 'training:yearly_plan_list' %}" class="section-card-link d-block h-100"><div class="card section-card h-100" data-serial="01"><div class="card-body"><h2 class="card-title h6">Trg Plan</h2><p class="card-text small text-secondary mb-0">View and update yearly training plans for soldiers.</p></div></div></a></div>
+  <div class="col-md-6 col-xl-4"><a href="{% url 'training:ipft_list' %}" class="section-card-link d-block h-100"><div class="card section-card h-100" data-serial="02"><div class="card-body"><h2 class="card-title h6">IPFT State</h2><p class="card-text small text-secondary mb-0">View physical fitness attempts, dates, and results.</p></div></div></a></div>
+  <div class="col-md-6 col-xl-4"><a href="{% url 'training:ret_list' %}" class="section-card-link d-block h-100"><div class="card section-card h-100" data-serial="03"><div class="card-body"><h2 class="card-title h6">RET State</h2><p class="card-text small text-secondary mb-0">Open firing, weapon training, and related RET states.</p></div></div></a></div>
+  <div class="col-md-6 col-xl-4"><a href="{% url 'training:speed_march_list' %}" class="section-card-link d-block h-100"><div class="card section-card h-100" data-serial="04"><div class="card-body"><h2 class="card-title h6">Spd March State</h2><p class="card-text small text-secondary mb-0">View speed march attempts, dates, and results.</p></div></div></a></div>
+  <div class="col-md-6 col-xl-4"><a href="{% url 'training:assault_course_list' %}" class="section-card-link d-block h-100"><div class="card section-card h-100" data-serial="05"><div class="card-body"><h2 class="card-title h6">Aslt Course State</h2><p class="card-text small text-secondary mb-0">View assault course attempts, times, and results.</p></div></div></a></div>
+  <div class="col-md-6 col-xl-4"><a href="{% url 'training:qual_list' %}" class="section-card-link d-block h-100"><div class="card section-card h-100" data-serial="06"><div class="card-body"><h2 class="card-title h6">Spl State</h2><p class="card-text small text-secondary mb-0">View individual qualifications, courses, cadres, and PE.</p></div></div></a></div>
+</div>
+{% endblock %}

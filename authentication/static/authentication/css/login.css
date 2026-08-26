@@ -1,0 +1,374 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+:root {
+    --primary: #123524;
+    --primary-light: #1d3f2d;
+    --secondary: #3a4a2e;
+    --gold: #c9a84c;
+    --gold-dim: rgba(201, 168, 76, 0.22);
+    --tiger: #c45a1a;
+    --maroon: #6b1f2e;
+    --ivory: #f0ede2;
+    --paper: #fcf9f2;
+    --text: #171a17;
+    --line: rgba(23, 26, 23, 0.10);
+    --line-gold: rgba(201, 168, 76, 0.4);
+
+    --radius-sm: 10px;
+    --radius: 16px;
+    --radius-lg: 26px;
+
+    --shadow-sm: 0 2px 10px rgba(18, 53, 36, 0.08);
+    --shadow-md: 0 20px 50px rgba(18, 53, 36, 0.22);
+    --shadow-focus: 0 0 0 4px rgba(201, 168, 76, 0.24);
+
+    --font-display: "Fraunces", Georgia, serif;
+    --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+html,
+body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    font-family: var(--font-sans);
+    background: var(--primary) !important;
+    background-image: radial-gradient(circle at 15% 15%, #1d3f2d 0%, #0a1f15 60%);
+    color: var(--text);
+    padding: 0 !important;
+}
+
+.login-page {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    padding: 2.5rem 1.5rem;
+}
+
+/* A single soft card holding both panels, rather than a hard edge-to-edge
+   split — reads friendlier and works better as a floating card on any
+   background. */
+.login-card {
+    width: 100%;
+    max-width: 920px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--paper);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.identity-panel {
+    background: var(--primary);
+    background-image: radial-gradient(circle at 20% 30%, #1d3f2d 0%, #0a1f15 100%);
+    padding: 3rem 2.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: #f0ede2;
+}
+
+.identity-panel .crest {
+    width: 110px;
+    margin-bottom: 1.6rem;
+    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.35));
+}
+
+.identity-panel .crest img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.identity-panel .regiment-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 2.5rem;
+    letter-spacing: 0.03em;
+    line-height: 1.1;
+    margin-bottom: 0.2rem;
+    color: #fff;
+}
+
+.identity-panel .regiment-sub {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+}
+
+.identity-panel .army-tag {
+    font-size: 0.88rem;
+    opacity: 0.8;
+    margin-bottom: 1.5rem;
+}
+
+.identity-panel .motto {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.1rem;
+    border-top: 1px solid var(--gold-dim);
+    padding-top: 1.1rem;
+    width: 75%;
+    margin-top: 0.6rem;
+    color: #e8e0d0;
+}
+
+.identity-panel .motto small {
+    display: block;
+    font-size: 0.68rem;
+    font-style: normal;
+    letter-spacing: 0.1em;
+    opacity: 0.7;
+    margin-top: 0.35rem;
+}
+
+.form-panel {
+    background: var(--paper);
+    padding: 3rem 2.75rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.login-form-wrap {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.form-header {
+    margin-bottom: 1.9rem;
+}
+
+.form-header .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--maroon);
+    background: rgba(107, 31, 46, 0.08);
+    border-radius: 999px;
+    padding: 0.3rem 0.7rem;
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+}
+
+.form-header h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 1.9rem;
+    margin-bottom: 0.3rem;
+}
+
+.form-header p {
+    font-size: 0.94rem;
+    color: #3f4a3a;
+    margin-bottom: 0;
+}
+
+.form-floating-custom {
+    margin-bottom: 1.4rem;
+}
+
+.form-floating-custom .form-label {
+    font-weight: 500;
+    font-size: 0.8rem;
+    color: var(--secondary);
+    margin-bottom: 0.35rem;
+    display: block;
+}
+
+.form-floating-custom .form-control {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+    background: #fff;
+    box-shadow: none;
+    font-size: 1rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-floating-custom .form-control:focus {
+    border-color: var(--gold);
+    box-shadow: var(--shadow-focus);
+    background: #fff;
+}
+
+.input-group-password {
+    display: flex;
+    align-items: stretch;
+}
+
+.input-group-password .form-control {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: none;
+}
+
+.input-group-password .btn-toggle {
+    border: 1px solid var(--line);
+    border-left: none;
+    background: #fff;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 0 1.1rem;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.input-group-password .btn-toggle:hover {
+    background: var(--ivory);
+    border-color: var(--gold);
+    color: var(--primary);
+}
+
+.login-page .form-check {
+    margin-bottom: 1.7rem;
+}
+
+.login-page .form-check-input {
+    border: 1.5px solid var(--secondary);
+    border-radius: 4px;
+}
+
+.login-page .form-check-input:checked {
+    background-color: var(--primary);
+    border-color: var(--gold);
+}
+
+.login-page .form-check-label {
+    font-size: 0.9rem;
+    color: #2d3a2d;
+}
+
+.btn-login {
+    background: var(--primary);
+    background-image: linear-gradient(180deg, var(--primary-light), var(--primary));
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #fff;
+    width: 100%;
+    font-size: 1.05rem;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease;
+}
+
+.btn-login:hover {
+    background: var(--maroon);
+    background-image: none;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(107, 31, 46, 0.3);
+}
+
+.btn-login:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
+.alert-custom {
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--ivory);
+    padding: 0.65rem 1rem;
+    font-size: 0.88rem;
+    margin-bottom: 1.4rem;
+    position: relative;
+    padding-left: 1.3rem;
+}
+
+.alert-custom::before {
+    content: "";
+    position: absolute;
+    left: 0.5rem;
+    top: 0.55rem;
+    bottom: 0.55rem;
+    width: 4px;
+    border-radius: 999px;
+    background: var(--gold);
+}
+
+.alert-custom-danger {
+    background: rgba(107, 31, 46, 0.06);
+}
+.alert-custom-danger::before {
+    background: var(--maroon);
+}
+
+.footer-note {
+    font-size: 0.74rem;
+    color: #6b7a6b;
+    text-align: center;
+    margin-top: 1.8rem;
+}
+
+@media (max-width: 900px) {
+    .login-card {
+        grid-template-columns: 1fr;
+        max-width: 480px;
+    }
+
+    .identity-panel {
+        padding: 2.25rem 2rem;
+    }
+
+    .identity-panel .crest {
+        width: 80px;
+        margin-bottom: 1.1rem;
+    }
+
+    .identity-panel .regiment-name {
+        font-size: 2rem;
+    }
+
+    .identity-panel .motto {
+        font-size: 1rem;
+        width: 90%;
+    }
+
+    .form-panel {
+        padding: 2.25rem 2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .login-page {
+        padding: 1.25rem 0.9rem;
+    }
+
+    .login-card {
+        border-radius: var(--radius);
+    }
+
+    .identity-panel .crest {
+        width: 68px;
+    }
+
+    .identity-panel .regiment-name {
+        font-size: 1.7rem;
+    }
+
+    .form-panel {
+        padding: 1.75rem 1.4rem;
+    }
+}

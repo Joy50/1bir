@@ -1,0 +1,101 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}Duty State · 1 BIR{% endblock %}
+
+{% block extra_css %}
+<style>
+  .duty-state-table { font-size: .95rem; }
+  .duty-state-table th, .duty-state-table td { border-color: #2a799e; padding: .45rem .65rem; vertical-align: middle; }
+  .duty-state-table thead th { background: #f4f5f5; color: #111; text-align: center; }
+  .duty-state-table tbody tr:nth-child(even):not(.duty-section-row):not(.duty-total-row) td { background: #d8e6ed; }
+  .duty-section-row th { background: #c8dee8; color: #111; font-weight: 800; text-decoration: underline; }
+  .duty-total-row th, .duty-total-row td { background: #aab8c0; color: #111; font-weight: 800; }
+  .duty-state-table .serial { width: 7%; text-align: center; }
+  .duty-state-table .place { width: 41%; font-weight: 700; }
+  .duty-state-table .number { width: 12%; text-align: center; }
+  .duty-state-table .remarks { width: 16%; }
+  .duty-calendar { table-layout: fixed; }
+  .duty-calendar th { text-align: center; background: #173f25; color: #fff; }
+  .duty-calendar td { height: 112px; padding: .4rem; vertical-align: top; width: 14.285%; }
+  .duty-calendar .outside-month { background: #f1f3f2; color: #929992; }
+  .duty-calendar .today { box-shadow: inset 0 0 0 2px #c5a24a; }
+  .calendar-day-number { font-weight: 800; margin-bottom: .3rem; }
+  .calendar-day-link { color: #123524; display: inline-flex; align-items: center; justify-content: center; width: 1.8rem; height: 1.8rem; border-radius: 50%; text-decoration: none; }
+  .calendar-day-link:hover, .calendar-day-link.active { background: #173f25; color: #fff; }
+  .calendar-duty { display: block; margin-bottom: .2rem; padding: .18rem .3rem; border-radius: .25rem; background: #d9e8ef; color: #123524; font-size: .72rem; line-height: 1.15; }
+  .header-company-filter { width: 190px; }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header d-flex flex-wrap justify-content-between align-items-end gap-3">
+  <div>
+    <div class="section-eyebrow">A Matter</div>
+    <h1>Duty State{% if selected_organization %} · {{ selected_organization }}{% else %} · 1 BIR{% endif %}</h1>
+    <p class="text-secondary mb-0">Live Unit Duty and Station Duty counts, generated automatically from active assignments.</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    {% if request.user.can_assign_duty %}<a href="{% url 'duty:assign' %}" class="btn btn-bir">Assign duty</a>{% endif %}
+    <form method="get" class="d-inline-flex">
+      <label class="visually-hidden" for="companyFilter">Company</label>
+      <select class="form-select header-company-filter" id="companyFilter" name="company" onchange="this.form.submit()" aria-label="Filter duty state by company">
+        <option value="">All companies</option>
+        {% for organization in organizations %}<option value="{{ organization.pk }}"{% if selected_company_id == organization.pk|stringformat:"s" %} selected{% endif %}>{{ organization }}</option>{% endfor %}
+      </select>
+      <noscript><button class="btn btn-outline-secondary ms-2" type="submit">Filter</button></noscript>
+    </form>
+    {% if request.user.can_view_duty_map %}<a href="{% url 'duty:map' %}" class="btn btn-outline-secondary">Duty map</a>{% endif %}
+  </div>
+</div>
+
+{% if selected_organization %}
+<div class="card form-panel mb-3"><div class="card-body p-0">
+  <div class="d-flex justify-content-between align-items-center gap-3 p-3">
+    <a class="btn btn-outline-secondary btn-sm" href="?company={{ selected_organization.pk }}&month={{ previous_month|date:'Y-m' }}">← Previous</a>
+    <h2 class="h5 mb-0">{{ calendar_month|date:"F Y" }}</h2>
+    <a class="btn btn-outline-secondary btn-sm" href="?company={{ selected_organization.pk }}&month={{ next_month|date:'Y-m' }}">Next →</a>
+  </div>
+  <div class="table-responsive"><table class="table table-bordered duty-calendar mb-0">
+    <thead><tr><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th><th>Saturday</th><th>Sunday</th></tr></thead>
+    <tbody>{% for week in calendar_weeks %}<tr>{% for day in week %}<td class="{% if not day.in_month %}outside-month{% endif %}{% if day.is_today %} today{% endif %}"><div class="calendar-day-number">{% if day.in_month %}<a class="calendar-day-link{% if selected_calendar_day == day.date %} active{% endif %}" href="?company={{ selected_organization.pk }}&month={{ calendar_month|date:'Y-m' }}&day={{ day.date|date:'Y-m-d' }}">{{ day.date.day }}</a>{% else %}{{ day.date.day }}{% endif %}</div>{% for assignment in day.assignments %}<span class="calendar-duty"><strong>{{ assignment.get_shift_display }}</strong> · {{ assignment.soldier.name }}<br>{{ assignment.post.name }}</span>{% endfor %}</td>{% endfor %}</tr>{% endfor %}</tbody>
+  </table></div>
+</div></div>
+
+{% if selected_calendar_day %}
+<div class="card form-panel mb-3"><div class="card-body p-0 table-responsive">
+  <div class="p-3 text-center"><h2 class="h5 mb-0">Assigned Duty · {{ selected_organization }} · {{ selected_calendar_day|date:"d F Y" }}</h2></div>
+  <table class="table table-bordered duty-state-table mb-0">
+    <thead><tr><th>Ser</th><th>Army No</th><th>Rk</th><th>Name</th><th>Pl</th><th>Sec</th><th>Day</th><th>Ni</th><th>Total</th></tr></thead>
+    <tbody>
+      {% for row in selected_day_rows %}<tr><td class="number">{{ row.serial }}.</td><td>{{ row.soldier.army_number }}</td><td>{{ row.soldier.rank }}</td><td>{{ row.soldier.name }}</td><td>{{ row.platoon }}</td><td>–</td><td class="number">{% if row.day %}{{ row.day }}{% else %}–{% endif %}</td><td class="number">{% if row.night %}{{ row.night }}{% else %}–{% endif %}</td><td class="number">{{ row.total }}</td></tr>{% empty %}<tr><td colspan="9" class="text-secondary text-center">No duty was assigned to this company on this date.</td></tr>{% endfor %}
+      <tr class="duty-total-row"><th colspan="6">Total</th><td class="number">{{ selected_day_day_total }}</td><td class="number">{{ selected_day_night_total }}</td><td class="number">{{ selected_day_day_total|add:selected_day_night_total }}</td></tr>
+    </tbody>
+  </table>
+</div></div>
+{% endif %}
+{% endif %}
+
+{% if not selected_organization %}
+<div class="card form-panel"><div class="card-body p-0 table-responsive">
+  <table class="table table-bordered duty-state-table mb-0">
+    <thead><tr><th class="serial">Ser</th><th class="place">Place</th><th class="number">Day</th><th class="number">Ni</th><th class="number">Total</th><th class="remarks">Rmk</th></tr></thead>
+    <tbody>
+      {% for section in duty_sections %}
+        <tr class="duty-section-row"><th colspan="6">{{ section.label }}</th></tr>
+        {% for row in section.rows %}
+          <tr>
+            <td class="serial">{{ row.serial }}.</td>
+            <td class="place">{{ row.post.name }}</td>
+            <td class="number">{% if row.day %}{{ row.day }}{% else %}–{% endif %}</td>
+            <td class="number">{% if row.night %}{{ row.night }}{% else %}–{% endif %}</td>
+            <td class="number">{{ row.total }}</td>
+            <td class="remarks">{{ row.post.description }}</td>
+          </tr>
+        {% empty %}<tr><td colspan="6" class="text-secondary">No {{ section.label|lower }} posts for this company.</td></tr>{% endfor %}
+      {% endfor %}
+      <tr class="duty-total-row"><th colspan="2">Total</th><td class="number">{{ duty_day_total }}</td><td class="number">{{ duty_night_total }}</td><td class="number">{{ duty_total }}</td><td></td></tr>
+    </tbody>
+  </table>
+</div></div>
+{% endif %}
+{% endblock %}

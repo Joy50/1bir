@@ -1,0 +1,90 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}All Soldiers · 1 BIR{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header d-flex flex-wrap align-items-end justify-content-between gap-3">
+  <div>
+    <div class="section-eyebrow">Soldier</div>
+    <h1>All Soldiers</h1>
+    <p class="text-secondary mb-0">Nominal roll for the units you can access.</p>
+  </div>
+  <div class="section-header-actions">
+    <a href="{% url 'common:soldier_create' %}" class="btn btn-bir">Enlist Soldier</a>
+  </div>
+</div>
+
+{% if not has_company and not request.user.is_admin and not request.user.is_co %}
+  <div class="alert alert-warning">Your account has no organization assignment yet.</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Strength</div><div class="stat-value">{{ stats.total }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Units</div><div class="stat-value">{{ stats.orgs }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">On Mission</div><div class="stat-value">{{ stats.mission }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Next Rank Qualified</div><div class="stat-value">{{ stats.qualified }}</div></div></div>
+</div>
+
+<div class="card form-panel">
+  <div class="card-body p-4">
+    <form method="get" class="row g-2 align-items-end mb-3">
+      <div class="col-md-5">
+        <label class="form-label" for="id_q">Search</label>
+        <input class="form-control" id="id_q" name="q" value="{{ search_query }}" placeholder="Name or army number">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="id_organization">Organization</label>
+        <select class="form-select" id="id_organization" name="organization">
+          <option value="">All units</option>
+          {% for org in organizations %}
+            <option value="{{ org.pk }}" {% if organization_filter == org.pk|stringformat:"s" %}selected{% endif %}>{{ org }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-outline-secondary" type="submit">Filter</button>
+      </div>
+    </form>
+    <div class="table-responsive">
+      <table class="table table-ledger mb-0">
+        <thead>
+          <tr>
+            <th>Army No</th>
+            <th>Name</th>
+            <th>Rank</th>
+            <th>Organization</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for soldier in soldiers %}
+            <tr>
+              <td>{{ soldier.army_number }}</td>
+              <td class="fw-medium">{{ soldier.name }}</td>
+              <td>{{ soldier.rank }}</td>
+              <td>{{ soldier.organization }}</td>
+              <td class="text-end">
+                <a href="{% url 'training:soldier_g_matter' soldier.pk %}" class="btn btn-bir btn-sm">G Matters</a>
+                <a href="{% url 'common:soldier_detail' soldier.pk %}" class="btn btn-outline-secondary btn-sm">Open</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-secondary">No soldiers found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj and page_obj.paginator.num_pages > 1 %}
+      <div class="d-flex justify-content-between mt-3">
+        {% if page_obj.has_previous %}
+          <a class="btn btn-outline-secondary btn-sm" href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}&organization={{ organization_filter }}">Previous</a>
+        {% else %}<span></span>{% endif %}
+        <span class="text-secondary small">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+          <a class="btn btn-outline-secondary btn-sm" href="?page={{ page_obj.next_page_number }}&q={{ search_query }}&organization={{ organization_filter }}">Next</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

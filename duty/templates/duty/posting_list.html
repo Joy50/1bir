@@ -1,0 +1,52 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}Posting Record · 1 BIR{% endblock %}
+
+{% block extra_css %}
+<style>
+  .posting-company-filter { width: 190px; }
+  .posting-table { min-width: 1080px; font-size: .82rem; }
+  .posting-table th, .posting-table td { border-color: #19719b; padding: .45rem .35rem; vertical-align: middle; }
+  .posting-table thead th { background: #f6f6f6; color: #111; text-align: center; }
+  .posting-table tbody tr:nth-child(odd) td { background: #d9e8ef; }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header d-flex flex-wrap justify-content-between align-items-end gap-3">
+  <div><div class="section-eyebrow">A Matter</div><h1>Posting Record{% if selected_company %} · {{ selected_company }}{% endif %}</h1><p class="text-secondary mb-0">Current location and service posting history.</p></div>
+  <div class="d-flex flex-wrap gap-2">
+    <form method="get" class="d-inline-flex">
+      <label class="visually-hidden" for="postingCompanyFilter">Company</label>
+      <select class="form-select posting-company-filter" id="postingCompanyFilter" name="company" onchange="this.form.submit()" aria-label="Filter posting record by company">
+        {% for company in companies %}<option value="{{ company.pk }}"{% if selected_company.pk == company.pk %} selected{% endif %}>{{ company }}</option>{% endfor %}
+      </select>
+      <noscript><button class="btn btn-outline-secondary ms-2" type="submit">Filter</button></noscript>
+    </form>
+    {% if can_post %}<a href="{% url 'duty:posting_create' %}" class="btn btn-bir">Generate Posting Order</a>{% endif %}
+  </div>
+</div>
+
+<div class="card form-panel"><div class="card-body p-0 table-responsive">
+    <table class="table table-bordered posting-table mb-0">
+      <thead>
+        <tr><th rowspan="2">Ser</th><th rowspan="2">Army No</th><th rowspan="2">Rk</th><th rowspan="2">Name</th><th rowspan="2">Pl</th><th colspan="4">Current Loc</th><th colspan="4">Hist of Att/ERE</th><th rowspan="2">Status</th></tr>
+        <tr><th>Unit</th><th>Att/ERE</th><th>From</th><th>To</th><th>Unit/Org</th><th>From</th><th>To</th><th>Duration</th></tr>
+      </thead>
+      <tbody>
+        {% for row in soldier_rows %}<tr>
+          <td>{{ forloop.counter }}.</td><td>{{ row.soldier.army_number }}</td><td>{{ row.soldier.rank }}</td><td class="fw-semibold">{{ row.soldier.name }}</td><td>{{ row.platoon }}</td>
+          <td>{{ row.current_unit }}</td><td>{{ row.current_att_ere|default:"—" }}</td><td>{% if row.current_history %}{{ row.current_history.start_date|date:"d M Y" }}{% else %}—{% endif %}</td><td>{% if row.current_history.end_date %}{{ row.current_history.end_date|date:"d M Y" }}{% else %}Present{% endif %}</td>
+          <td>{% if row.previous_history %}{{ row.previous_history.organization }}{% else %}—{% endif %}</td><td>{% if row.previous_history %}{{ row.previous_history.start_date|date:"d M Y" }}{% else %}—{% endif %}</td><td>{% if row.previous_history %}{{ row.previous_history.end_date|date:"d M Y" }}{% else %}—{% endif %}</td><td>{{ row.history_duration|default:"—" }}</td>
+          <td>{% if row.pending %}<span class="badge badge-action badge-pending">To {{ row.pending.to_organization }}</span>{% else %}Current{% endif %}</td>
+        </tr>{% empty %}<tr><td colspan="14" class="text-secondary">No soldiers in this company.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+</div></div>
+
+{% if postings %}
+<div class="card form-panel mt-4"><div class="card-body p-4"><h2 class="h6 mb-3">Posting Requests</h2><div class="table-responsive"><table class="table table-ledger mb-0"><thead><tr><th>Soldier</th><th>From</th><th>To</th><th>Posted by</th><th>Status</th><th></th></tr></thead><tbody>
+  {% for posting in postings %}<tr><td>{{ posting.soldier.army_number }} {{ posting.soldier.name }}</td><td>{{ posting.from_organization }}</td><td>{{ posting.to_organization }}</td><td>{{ posting.posted_by.name|default:posting.posted_by }}</td><td><span class="badge badge-action badge-{{ posting.status }}">{{ posting.get_status_display }}</span></td><td class="text-end">{% if can_accept and posting.status == "pending" %}<form method="post" action="{% url 'duty:posting_decide' posting.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="accept"><button class="btn btn-bir btn-sm">Accept</button></form> <form method="post" action="{% url 'duty:posting_decide' posting.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="reject"><button class="btn btn-outline-secondary btn-sm">Reject</button></form>{% endif %}</td></tr>{% endfor %}
+</tbody></table></div></div></div>
+{% endif %}
+{% endblock %}

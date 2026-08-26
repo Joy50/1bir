@@ -1,0 +1,88 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}{{ section_title }} · 1 BIR{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header">
+  <div class="section-eyebrow">Training // {{ section_title }}</div>
+  <h1>Edit {{ formset_title }}</h1>
+  <p class="text-secondary mb-0">Update records for {{ soldier.name }}.</p>
+</div>
+
+<div class="card form-panel mb-4">
+  <div class="card-body p-4">
+    <div class="form-eyebrow mb-3">Soldier</div>
+    <div class="dossier-grid">
+      <div class="dossier-field">
+        <span class="form-label">Army Number</span>
+        <div class="dossier-value">{{ soldier.army_number }}</div>
+      </div>
+      <div class="dossier-field">
+        <span class="form-label">Name</span>
+        <div class="dossier-value">{{ soldier.name }}</div>
+      </div>
+      <div class="dossier-field">
+        <span class="form-label">Rank</span>
+        <div class="dossier-value">{{ soldier.rank }}</div>
+      </div>
+      <div class="dossier-field">
+        <span class="form-label">Company</span>
+        <div class="dossier-value">{{ soldier.organization }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card form-panel">
+  <div class="card-body p-4">
+    <form method="post" novalidate class="form-ledger" data-unsaved-warn>
+      {% csrf_token %}
+      {% include "common/partials/person_formset.html" with formset=formset title=formset_title prefix=formset_prefix %}
+      <div class="form-actions-bar">
+        <button type="submit" class="btn btn-bir">Save</button>
+        <a href="{{ back_url }}" class="btn btn-outline-secondary">Back</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener("click", function (event) {
+    const addButton = event.target.closest("[data-add-formset]");
+    if (addButton) {
+      const prefix = addButton.getAttribute("data-add-formset");
+      const total = document.getElementById("id_" + prefix + "-TOTAL_FORMS");
+      const template = document.getElementById(prefix + "-empty");
+      const container = document.getElementById(prefix + "-forms");
+      if (!total || !template || !container) {
+        return;
+      }
+      const index = total.value;
+      container.insertAdjacentHTML(
+        "beforeend",
+        template.innerHTML.replaceAll("__prefix__", index)
+      );
+      total.value = String(Number(index) + 1);
+      return;
+    }
+
+    const removeButton = event.target.closest("[data-remove-form]");
+    if (!removeButton) {
+      return;
+    }
+    const row = removeButton.closest(".inline-form");
+    if (!row) {
+      return;
+    }
+    const deleteField = row.querySelector('input[name$="-DELETE"]');
+    if (deleteField) {
+      deleteField.checked = true;
+      row.classList.add("is-deleted");
+    } else {
+      row.remove();
+    }
+  });
+</script>
+{% endblock %}

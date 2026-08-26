@@ -1,0 +1,23 @@
+{% extends "authentication/dashboard_base.html" %}
+{% block title %}RET State · 1 BIR{% endblock %}
+{% block dashboard_content %}
+<div class="section-header text-center"><div class="section-eyebrow">G Matter // RET</div><h1>RET State – {% if selected_organization %}{{ selected_organization }}{% else %}1 BIR{% endif %}</h1></div>
+
+<div class="card form-panel mb-4"><div class="card-body p-4"><form method="get" class="row g-3 align-items-end">
+  <div class="col-sm-4 col-lg-3"><label class="form-label" for="id_year">Year</label><select class="form-select" id="id_year" name="year">{% for year in year_choices %}<option value="{{ year }}"{% if year == selected_year %} selected{% endif %}>{{ year }}</option>{% endfor %}</select></div>
+  <div class="col-sm-5 col-lg-5"><label class="form-label" for="id_organization">Company</label><select class="form-select" id="id_organization" name="organization"><option value="">All Companies</option>{% for organization in organizations %}<option value="{{ organization.pk }}"{% if organization_filter == organization.pk|stringformat:"s" %} selected{% endif %}>{{ organization }}</option>{% endfor %}</select></div>
+  <div class="col-sm-12 col-lg-4"><div class="d-flex flex-nowrap gap-2"><button class="btn btn-bir flex-fill" type="submit">Filter</button><a class="btn btn-outline-secondary flex-fill" data-clear-filters href="{% url 'training:ret_list' %}">Clear</a></div></div>
+</form></div></div>
+
+{% include "training/ret_summary_table.html" with title="Classification Firing State" rows=classification_rows total=classification_total show_results=True %}
+{% include "training/ret_summary_table.html" with title="Gren Firing State" rows=grenade_rows total=grenade_total show_results=False %}
+
+{% if selected_organization %}
+<div class="section-header text-center mt-5"><h2>Indl Firing Record – {{ selected_organization }}</h2></div>
+<div class="card form-panel"><div class="card-body p-0"><div class="table-responsive"><table class="table table-bordered table-ledger mb-0 align-middle">
+  <thead><tr><th>Ser</th><th>Army No</th><th>Rk</th><th>Name</th><th>Cat</th><th>Classification Dt</th><th>Result</th><th>Gren Dt</th><th>Result</th></tr></thead>
+  <tbody>{% for soldier in individual_soldiers %}<tr><td>{{ forloop.counter }}</td><td>{{ soldier.army_number }}</td><td>{{ soldier.rank }}</td><td>{{ soldier.name }}</td><td>{{ soldier.rank.get_category_display }}</td><td>{{ soldier.latest_classification.date_of_firing|date:"d M Y"|default:"—" }}</td><td>{{ soldier.latest_classification.result|default:"—" }}</td><td>{{ soldier.latest_grenade.date_of_firing|date:"d M Y"|default:"—" }}</td><td>{{ soldier.latest_grenade.result|default:"—" }}</td></tr>{% empty %}<tr><td colspan="9">No soldiers found.</td></tr>{% endfor %}</tbody>
+</table></div></div></div>
+{% endif %}
+
+{% endblock %}

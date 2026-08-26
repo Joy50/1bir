@@ -1,0 +1,23 @@
+{% if is_paginated %}
+  <nav class="pagination-ledger mt-3" aria-label="Pages">
+    {% if page_obj.has_previous %}
+      <a class="btn btn-outline-secondary btn-sm" href="?page={{ page_obj.previous_page_number }}&q={{ search_query|urlencode }}&organization={{ organization_filter }}{% if selected_year %}&year={{ selected_year }}{% endif %}">Previous</a>
+    {% else %}
+      <span class="btn btn-outline-secondary btn-sm disabled">Previous</span>
+    {% endif %}
+    <div class="pagination-pages">
+      {% for page_number in paginator.page_range %}
+        {% if page_number == page_obj.number %}
+          <span class="page-link-bir active">{{ page_number }}</span>
+        {% else %}
+          <a class="page-link-bir" href="?page={{ page_number }}&q={{ search_query|urlencode }}&organization={{ organization_filter }}{% if selected_year %}&year={{ selected_year }}{% endif %}">{{ page_number }}</a>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% if page_obj.has_next %}
+      <a class="btn btn-outline-secondary btn-sm" href="?page={{ page_obj.next_page_number }}&q={{ search_query|urlencode }}&organization={{ organization_filter }}{% if selected_year %}&year={{ selected_year }}{% endif %}">Next</a>
+    {% else %}
+      <span class="btn btn-outline-secondary btn-sm disabled">Next</span>
+    {% endif %}
+  </nav>
+{% endif %}

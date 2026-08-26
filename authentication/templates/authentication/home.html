@@ -1,0 +1,75 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}{{ active_section_label }} · 1 BIR{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header d-flex flex-wrap align-items-end justify-content-between gap-3">
+  <div>
+    <div class="section-eyebrow">{{ active_section_label }}</div>
+    <h1>Good day, {{ request.user.name }}</h1>
+    <p class="text-secondary mb-0">{{ active_section_description }}</p>
+  </div>
+</div>
+
+{% if admin_stats %}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-label">Persons Enlisted</div>
+      <div class="stat-value">{{ admin_stats.persons }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-label">Ranks Added</div>
+      <div class="stat-value">{{ admin_stats.ranks }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-label">Reports Generated</div>
+      <div class="stat-value">{{ admin_stats.reports }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-label">Portal Users</div>
+      <div class="stat-value">{{ admin_stats.users }}</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3">
+  {% for item in section_items %}
+    <div class="col-md-6 col-xl-4">
+      {% if item.url %}
+        <a href="{{ item.url }}" class="section-card-link d-block h-100">
+          <div class="card section-card h-100" data-serial="{{ forloop.counter|stringformat:'02d' }}">
+            <div class="card-body">
+              <h2 class="card-title h6">{{ item.title }}</h2>
+              <p class="card-text small text-secondary mb-0">{{ item.text }}</p>
+            </div>
+          </div>
+        </a>
+      {% else %}
+        <div class="card section-card section-card-soon h-100" data-serial="{{ forloop.counter|stringformat:'02d' }}">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+              <h2 class="card-title h6 mb-0">{{ item.title }}</h2>
+              <span class="badge badge-soon">Soon</span>
+            </div>
+            <p class="card-text small text-secondary mb-0">{{ item.text }}</p>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  {% empty %}
+    <div class="col-12">
+      <div class="alert alert-info mb-0">
+        No options are available in this section for your account.
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
