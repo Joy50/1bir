@@ -1,4 +1,4 @@
-from django.db import migrations, models
+from django.db import migrations
 
 
 class Migration(migrations.Migration):
@@ -7,14 +7,5 @@ class Migration(migrations.Migration):
         ("training", "0007_individualqual_shared_fields"),
     ]
 
-    operations = [
-        migrations.AddField(
-            model_name="individualqualcourse",
-            name="result",
-            field=models.CharField(blank=True, max_length=255),
-        ),
-        migrations.RemoveField(
-            model_name="individualcoursename",
-            name="result",
-        ),
-    ]
+    # The result field is created and populated safely in migration 0007.
+    operations = []
