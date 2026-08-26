@@ -1,8 +1,8 @@
-asgiref==3.12.1
-charset-normalizer==3.5.1
-Django==6.1
-pillow==12.3.0
-reportlab==4.5.1
-sqlparse==0.6.0
-tzdata==2026.3
-whitenoise>=6.9,<7
+asgiref
+charset-normalizer
+Django
+pillow
+reportlab
+sqlpars
+tzdata
+whitenoise
