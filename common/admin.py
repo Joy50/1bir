@@ -60,8 +60,12 @@ class RankAdmin(admin.ModelAdmin):
 @admin.register(Organization)
 class OrganizationAdmin(admin.ModelAdmin):
     search_fields = ("organization_name",)
+<<<<<<< HEAD
     list_display = ("organization_name", "parent_organization", "unit_kind")
     list_filter = ("unit_kind",)
+=======
+    list_display = ("organization_name", "parent_organization")
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
 
 @admin.register(CivilEducationLevel)

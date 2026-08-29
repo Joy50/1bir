@@ -22,6 +22,7 @@
 <div class="card form-panel mb-4">
   <div class="card-body p-4">
     <form method="get" class="row g-3 align-items-end">
+<<<<<<< HEAD
       <div class="col-md-3">
         <label class="form-label" for="id_year">Year</label>
         <select class="form-select" id="id_year" name="year">
@@ -35,6 +36,13 @@
         <input type="text" class="form-control" id="id_search" name="q" value="{{ search_query }}" placeholder="Name or army number">
       </div>
       <div class="col-md-3">
+=======
+      <div class="col-md-5">
+        <label class="form-label" for="id_search">Search</label>
+        <input type="text" class="form-control" id="id_search" name="q" value="{{ search_query }}" placeholder="Name or army number">
+      </div>
+      <div class="col-md-5">
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         <label class="form-label" for="id_organization">Company / Organization</label>
         <select class="form-select" id="id_organization" name="organization">
           <option value="">All my companies</option>
@@ -76,7 +84,11 @@
                   {% if soldier.latest_course.result %} · {{ soldier.latest_course.result }}{% endif %}
                 {% else %}—{% endif %}
               </td>
+<<<<<<< HEAD
               <td class="text-end"><a href="{% url 'training:qual_edit' soldier.pk %}?year={{ selected_year }}" class="btn btn-bir btn-sm">Edit</a></td>
+=======
+              <td class="text-end"><a href="{% url 'training:qual_edit' soldier.pk %}" class="btn btn-bir btn-sm">Edit</a></td>
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
             </tr>
           {% empty %}
             <tr><td colspan="11">No soldiers match the current filters.</td></tr>

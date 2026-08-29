@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import AdminUserCreationForm, UserChangeForm
 
+<<<<<<< HEAD
 from .models import (
     DashboardSlide,
     HallOfFameCO,
@@ -10,6 +11,9 @@ from .models import (
     UnitProfile,
     User,
 )
+=======
+from .models import User
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
 
 class PortalUserChangeForm(UserChangeForm):
@@ -141,6 +145,7 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
     )
+<<<<<<< HEAD
 
 
 class SingletonProfileAdmin(admin.ModelAdmin):
@@ -197,3 +202,5 @@ class UnitAchievementAdmin(admin.ModelAdmin):
 class UnitHighlightAdmin(admin.ModelAdmin):
     list_display = ("title", "icon", "display_order", "is_published")
     list_editable = ("display_order", "is_published")
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf

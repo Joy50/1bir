@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from collections import defaultdict
 
 from django.db import transaction
@@ -6,6 +7,16 @@ from django.utils import timezone
 
 from common.models import Organization, Person
 from common.scoping import get_accessible_organization_ids, organization_lookup, rollup_to_parade_organization
+=======
+import re
+from collections import defaultdict
+
+from django.db import transaction
+from django.utils import timezone
+
+from common.models import Person
+from common.scoping import get_accessible_organization_ids
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 from training.models import LeaveState
 
 from .models import (
@@ -27,8 +38,11 @@ MAP_DEFAULT_ZOOM = 15
 
 def parade_rank_key(rank_name):
     """Map the rank/trade names in personnel records to parade-state columns."""
+<<<<<<< HEAD
     import re
 
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
     value = re.sub(r"[^A-Z0-9]", "", (rank_name or "").upper())
     exact = {
         "MWO": "mwo", "SWO": "swo", "WO": "wo", "SGT": "sgt",
@@ -46,6 +60,7 @@ def parade_rank_key(rank_name):
 
 
 def parade_absence_key(leave):
+<<<<<<< HEAD
     if LeaveState.is_casual_slot(leave.slot):
         return "c_l"
     mapped = LeaveState.SLOT_ABSENCE_KEYS.get(leave.slot)
@@ -78,6 +93,35 @@ def generate_parade_state(user, report_date=None, refresh=False):
             authorized_strength=PARADE_AUTHORIZED_DEFAULTS,
         )
     elif not state.authorized_strength:
+=======
+    slot = (leave.slot or "").lower()
+    name = re.sub(r"[^a-z]", "", leave.leave_type.name.lower())
+    if slot.startswith("p") or name.startswith("privilege") or name.startswith("pl"):
+        return "p_l"
+    if slot.startswith("c") or name.startswith("casual") or name.startswith("cl"):
+        return "c_l"
+    mappings = {
+        "joining": "j_l", "jl": "j_l", "medical": "m_l", "ml": "m_l",
+        "course": "course", "cadre": "cadre", "command": "comd",
+        "attachment": "att", "hospital": "hosp", "demobilization": "demob",
+        "fieldmission": "fdmn", "teknaf": "teknaf", "osl": "osl",
+    }
+    return mappings.get(name, "c_l")
+
+
+@transaction.atomic
+def generate_parade_state(user, report_date=None):
+    """Refresh a daily parade state entirely from current personnel and leave data."""
+    report_date = report_date or timezone.localdate()
+    state, _created = ParadeState.objects.get_or_create(
+        report_date=report_date,
+        defaults={
+            "created_by": user,
+            "authorized_strength": PARADE_AUTHORIZED_DEFAULTS,
+        },
+    )
+    if state.authorized_strength != PARADE_AUTHORIZED_DEFAULTS:
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         state.authorized_strength = PARADE_AUTHORIZED_DEFAULTS
         state.save(update_fields=["authorized_strength", "updated_at"])
 
@@ -88,12 +132,17 @@ def generate_parade_state(user, report_date=None, refresh=False):
     details = defaultdict(lambda: {key: 0 for key in absence_keys})
 
     people = list(Person.objects.select_related("rank", "organization"))
+<<<<<<< HEAD
     orgs_by_id = organization_lookup()
     for person in people:
         bucket = rollup_to_parade_organization(person.organization, orgs_by_id)
         if bucket is None:
             continue
         posted[bucket.pk][parade_rank_key(person.rank.rank_name)] += 1
+=======
+    for person in people:
+        posted[person.organization_id][parade_rank_key(person.rank.rank_name)] += 1
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
     active_leaves = LeaveState.objects.filter(
         status=LeaveState.STATUS_APPROVED,
@@ -106,6 +155,7 @@ def generate_parade_state(user, report_date=None, refresh=False):
         if person.pk in counted_people:
             continue
         counted_people.add(person.pk)
+<<<<<<< HEAD
         bucket = rollup_to_parade_organization(person.organization, orgs_by_id)
         if bucket is None:
             continue
@@ -123,6 +173,14 @@ def generate_parade_state(user, report_date=None, refresh=False):
             )
         ).values_list("pk", flat=True)
     )
+=======
+        organization_id = person.organization_id
+        absent[organization_id][parade_rank_key(person.rank.rank_name)] += 1
+        details[organization_id][parade_absence_key(leave)] += 1
+
+    organization_ids = {person.organization_id for person in people}
+    organization_ids.update(posted.keys())
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
     state.company_states.exclude(organization_id__in=organization_ids).delete()
     for organization_id in organization_ids:
         ParadeStateCompany.objects.update_or_create(
@@ -141,6 +199,7 @@ def get_open_tour():
     return DutyTour.objects.filter(status=DutyTour.STATUS_OPEN).first()
 
 
+<<<<<<< HEAD
 @transaction.atomic
 def get_or_create_open_tour():
     tour = (
@@ -156,6 +215,13 @@ def get_or_create_open_tour():
         .values_list("number", flat=True)
         .first()
     )
+=======
+def get_or_create_open_tour():
+    tour = get_open_tour()
+    if tour:
+        return tour
+    last_number = DutyTour.objects.order_by("-number").values_list("number", flat=True).first()
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
     return DutyTour.objects.create(number=(last_number or 0) + 1)
 
 
@@ -219,6 +285,7 @@ def tour_progress(user):
 def suggested_soldiers(user, limit=12):
     progress = tour_progress(user)
     occupied_posts = {row.post_id for row in progress["on_duty"]}
+<<<<<<< HEAD
     due = progress["still_due"]
     last_completed = DutyAssignment.objects.filter(
         soldier_id=OuterRef("pk"),
@@ -238,6 +305,25 @@ def suggested_soldiers(user, limit=12):
         }
         for soldier in due
     ]
+=======
+    suggestions = []
+    for soldier in progress["still_due"]:
+        last = (
+            DutyAssignment.objects.filter(
+                soldier=soldier,
+                status=DutyAssignment.STATUS_COMPLETED,
+            )
+            .order_by("-completed_at")
+            .first()
+        )
+        suggestions.append(
+            {
+                "soldier": soldier,
+                "last_completed": last.completed_at if last else None,
+                "reason": "Not yet detailed in this tour",
+            }
+        )
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
     suggestions.sort(
         key=lambda item: (
             item["last_completed"] is not None,

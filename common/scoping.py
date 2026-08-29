@@ -1,6 +1,7 @@
 from .models import Organization
 
 
+<<<<<<< HEAD
 def organization_children_map():
     children_map = {}
     for org in Organization.objects.only("id", "parent_organization_id"):
@@ -30,6 +31,17 @@ def descendant_ids_by_organization(organizations):
     }
 
 
+=======
+def collect_descendant_ids(organization, collected=None):
+    if collected is None:
+        collected = set()
+    collected.add(organization.pk)
+    for child in organization.child_organizations.all():
+        collect_descendant_ids(child, collected)
+    return collected
+
+
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 def get_accessible_organizations(user):
     queryset = Organization.objects.all().order_by("organization_name")
     if not user.is_authenticated:
@@ -39,6 +51,7 @@ def get_accessible_organizations(user):
     assigned = list(user.organizations.all())
     if not assigned:
         return queryset.none()
+<<<<<<< HEAD
     children_map = organization_children_map()
     ids = set()
     stack = [org.pk for org in assigned]
@@ -48,6 +61,24 @@ def get_accessible_organizations(user):
             continue
         ids.add(current_id)
         stack.extend(children_map.get(current_id, []))
+=======
+    ids = set()
+    children_map = {
+        org.pk: org
+        for org in Organization.objects.select_related("parent_organization")
+    }
+    # Walk using parent links from a fresh tree
+    by_parent = {}
+    for org in Organization.objects.all():
+        by_parent.setdefault(org.parent_organization_id, []).append(org)
+    stack = list(assigned)
+    while stack:
+        current = stack.pop()
+        if current.pk in ids:
+            continue
+        ids.add(current.pk)
+        stack.extend(by_parent.get(current.pk, []))
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
     return queryset.filter(pk__in=ids)
 
 
@@ -55,6 +86,7 @@ def get_accessible_organization_ids(user):
     if getattr(user, "is_admin", False) or getattr(user, "is_co", False):
         return None
     return set(get_accessible_organizations(user).values_list("pk", flat=True))
+<<<<<<< HEAD
 
 
 def get_accessible_companies(user):
@@ -137,3 +169,5 @@ def get_battalion(user=None):
     return queryset.filter(
         unit_kind=Organization.KIND_UNIT
     ).order_by("organization_name").first()
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf

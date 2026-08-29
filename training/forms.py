@@ -1,6 +1,9 @@
 from django import forms
 from django.forms import BaseInlineFormSet, inlineformset_factory, modelformset_factory
+<<<<<<< HEAD
 from django.utils import timezone
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
 from common.models import Person
 
@@ -159,6 +162,7 @@ class SportsTrainingForm(forms.ModelForm):
         }
 
 
+<<<<<<< HEAD
 SLOT_LEAVE_TYPE_NAMES = {
     LeaveState.SLOT_P_LEAVE: "Privilege Leave",
     LeaveState.SLOT_C_LEAVE_1: "Casual Leave",
@@ -186,6 +190,14 @@ def leave_type_for_slot(slot):
     else:
         name = SLOT_LEAVE_TYPE_NAMES.get(slot)
     if not name:
+=======
+def leave_type_for_slot(slot):
+    if slot == LeaveState.SLOT_P_LEAVE:
+        name = "Privilege Leave"
+    elif slot.startswith("C lve"):
+        name = "Casual Leave"
+    else:
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         return None
     leave_type, _created = LeaveType.objects.get_or_create(name=name)
     return leave_type
@@ -219,6 +231,7 @@ class LeaveApplyForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.soldier = kwargs.pop("soldier", None)
+<<<<<<< HEAD
         self.applicant = kwargs.pop("applicant", None)
         super().__init__(*args, **kwargs)
         self.fields["remarks"].required = False
@@ -252,6 +265,13 @@ class LeaveApplyForm(forms.ModelForm):
             required=True,
             help_text=help_text,
         )
+=======
+        super().__init__(*args, **kwargs)
+        self.fields["slot"].required = True
+        self.fields["slot"].label = "Leave slot"
+        self.fields["remarks"].required = False
+        self.fields["remarks"].label = "Reason / notes"
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
     def clean(self):
         cleaned = super().clean()
@@ -269,6 +289,7 @@ class LeaveApplyForm(forms.ModelForm):
                 self.add_error("slot", "Choose a valid leave slot.")
             else:
                 cleaned["leave_type"] = leave_type
+<<<<<<< HEAD
             if (
                 self.applicant
                 and self.applicant.is_clerk
@@ -280,6 +301,8 @@ class LeaveApplyForm(forms.ModelForm):
                     "slot",
                     "Company clerks can apply only for P Leave and C Leave.",
                 )
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
         if soldier and from_date and to_date:
             overlapping = LeaveState.objects.filter(
@@ -340,11 +363,18 @@ class IndividualQualForm(forms.ModelForm):
             "qual_for_next_promotion",
         ]
         widgets = {
+<<<<<<< HEAD
             "year": forms.NumberInput(
                 attrs={
                     "class": "form-control",
                     "min": 1900,
                     "max": 2100,
+=======
+            "year": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "maxlength": "4",
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
                     "placeholder": "2026",
                 }
             ),

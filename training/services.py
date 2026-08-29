@@ -1,12 +1,17 @@
 from collections import Counter
 
 from django.db.models import Count
+<<<<<<< HEAD
 from django.urls import reverse
 from django.utils import timezone
 
 from common.scoping import get_company_of
 
 from .models import LeaveState, ParticipationInMajCom, YearlyPlan
+=======
+
+from .models import ParticipationInMajCom, YearlyPlan
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
 CYCLES = [cycle for cycle, _label in YearlyPlan.CYCLE_CHOICES]
 CYCLE_FIELDS = [
@@ -24,6 +29,7 @@ OPTION_SLUGS = {
 }
 
 
+<<<<<<< HEAD
 def leave_board_url(soldier, year=None):
     year = year or timezone.localdate().year
     company = get_company_of(getattr(soldier, "organization", None))
@@ -37,6 +43,8 @@ def is_privilege_or_casual_slot(slot):
     return slot == LeaveState.SLOT_P_LEAVE or LeaveState.is_casual_slot(slot)
 
 
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 def attach_cycle_plans(soldiers, year):
     plans_by_soldier = {}
     if soldiers:

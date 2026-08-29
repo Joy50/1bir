@@ -8,9 +8,15 @@
   <h1>{% if can_apply %}Apply Leave{% elif can_approve %}Review Leave{% else %}Leave State{% endif %}</h1>
   <p class="text-secondary mb-0">
     {% if can_apply %}
+<<<<<<< HEAD
       Submit a leave request for this soldier. Any officer of this company or the CO can approve P Leave and C Leave; Leave State updates automatically.
     {% elif can_approve %}
       Approve or reject pending leave requests for this soldier. Approved P Leave and C Leave appear on Leave State.
+=======
+      Submit a leave request for this soldier. An officer will approve or reject it.
+    {% elif can_approve %}
+      Approve or reject pending leave requests for this soldier.
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
     {% else %}
       Leave history for this soldier.
     {% endif %}
@@ -54,7 +60,10 @@
         <div class="col-md-6 mb-3">
           <label for="{{ form.slot.id_for_label }}" class="form-label">Leave slot</label>
           {{ form.slot }}
+<<<<<<< HEAD
           {% if form.slot.help_text %}<div class="form-text">{{ form.slot.help_text }}</div>{% endif %}
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
           {% if form.slot.errors %}<div class="text-danger small">{{ form.slot.errors }}</div>{% endif %}
         </div>
         <div class="col-md-6 mb-3">
@@ -120,13 +129,19 @@
                     <form method="post" action="{% url 'training:leave_decide' leave.pk %}" class="d-inline">
                       {% csrf_token %}
                       <input type="hidden" name="action" value="approve">
+<<<<<<< HEAD
                       <input type="hidden" name="next" value="{{ leave_board_url }}">
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
                       <button type="submit" class="btn btn-bir btn-sm">Approve</button>
                     </form>
                     <form method="post" action="{% url 'training:leave_decide' leave.pk %}" class="d-inline">
                       {% csrf_token %}
                       <input type="hidden" name="action" value="reject">
+<<<<<<< HEAD
                       <input type="hidden" name="next" value="{{ leave_board_url }}">
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
                       <input type="text" name="remarks" class="form-control d-inline-block" style="width: 10rem;" placeholder="Reject reason">
                       <button type="submit" class="btn btn-outline-secondary btn-sm">Reject</button>
                     </form>

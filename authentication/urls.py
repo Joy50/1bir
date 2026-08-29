@@ -1,6 +1,10 @@
 from django.urls import path
 
+<<<<<<< HEAD
 from . import dashboard_views, views
+=======
+from . import views
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
 app_name = "authentication"
 
@@ -40,6 +44,7 @@ urlpatterns = [
         views.UpdateUserView.as_view(),
         name="update_user",
     ),
+<<<<<<< HEAD
     path(
         "dashboard/manage/",
         dashboard_views.DashboardManageHubView.as_view(),
@@ -70,4 +75,6 @@ urlpatterns = [
         dashboard_views.DashboardResourceDeleteView.as_view(),
         name="dashboard_resource_delete",
     ),
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 ]

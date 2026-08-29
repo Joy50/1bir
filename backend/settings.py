@@ -113,7 +113,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
+<<<<<<< HEAD
 TIME_ZONE = "Asia/Dhaka"
+=======
+TIME_ZONE = 'UTC'
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
 USE_I18N = True
 
@@ -148,9 +152,12 @@ MESSAGE_TAGS = {
     message_constants.ERROR: "danger",
 }
 
+<<<<<<< HEAD
 # Soldier enlist/edit posts many inline formsets on one page.
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration

@@ -5,6 +5,7 @@ from django.contrib.auth.forms import (
 )
 from django.contrib.auth.password_validation import validate_password
 
+<<<<<<< HEAD
 from common.forms import StyledModelForm
 from common.models import Organization, Rank
 
@@ -16,6 +17,11 @@ from .models import (
     UnitProfile,
     User,
 )
+=======
+from common.models import Organization, Rank
+
+from .models import User
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
 
 # ============================================================
@@ -394,6 +400,7 @@ class UserUpdateForm(forms.ModelForm):
             self.save_m2m()
 
         return user
+<<<<<<< HEAD
 
 
 class UnitProfileForm(StyledModelForm):
@@ -495,3 +502,5 @@ class UnitHighlightForm(StyledModelForm):
         widgets = {
             "body": forms.Textarea(attrs={"rows": 3}),
         }
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf

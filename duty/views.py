@@ -18,6 +18,7 @@ from authentication.views import (
     OfficerActionMixin,
     PortalContextMixin,
 )
+<<<<<<< HEAD
 from common.activity import log_addition, log_change, log_deletion
 from common.models import Organization, Person, ServiceHistory
 from common.http import safe_redirect_target
@@ -31,6 +32,18 @@ from common.scoping import (
 from common.views import SoldierAccessMixin
 
 from .forms import DutyAssignForm, DutyPostForm, ParadeAbsenceDocumentForm, SoldierPostingForm
+=======
+from common.activity import log_addition, log_change
+from common.models import Organization, Person, ServiceHistory
+from common.scoping import (
+    collect_descendant_ids,
+    get_accessible_organization_ids,
+    get_accessible_organizations,
+)
+from common.views import SoldierAccessMixin
+
+from .forms import DutyAssignForm, DutyPostForm, SoldierPostingForm
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 from .models import (
     PARADE_ABSENCE_COLUMNS,
     PARADE_AUTHORIZED_DEFAULTS,
@@ -38,8 +51,13 @@ from .models import (
     DutyAssignment,
     DutyPost,
     DutyTour,
+<<<<<<< HEAD
     ParadeAbsenceDocument,
     ParadeState,
+=======
+    ParadeState,
+    ParadeStateCompany,
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
     SoldierPosting,
 )
 from authentication.portal import get_portal_context
@@ -72,7 +90,16 @@ class DutyHomeView(SoldierAccessMixin, TemplateView):
         if allowed_ids is not None:
             pending = pending.filter(to_organization_id__in=allowed_ids)
         context["pending_postings"] = pending
+<<<<<<< HEAD
         organizations = get_accessible_companies(self.request.user)
+=======
+        organizations = self.get_allowed_organizations().filter(
+            parent_organization__organization_name="1 BIR",
+            organization_name__in=[
+                "A Company", "B Company", "C Company", "D Company", "HQ Company",
+            ],
+        ).order_by("organization_name")
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         selected_id = self.request.GET.get("company", "")
         selected_organization = None
         if selected_id.isdigit():
@@ -315,7 +342,16 @@ class SoldierPostingListView(SoldierAccessMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+<<<<<<< HEAD
         companies = get_accessible_companies(self.request.user)
+=======
+        companies = self.get_allowed_organizations().filter(
+            parent_organization__organization_name="1 BIR",
+            organization_name__in=[
+                "A Company", "B Company", "C Company", "D Company", "HQ Company",
+            ],
+        ).order_by("organization_name")
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         company_value = self.request.GET.get("company", "")
         selected_company = None
         if company_value.isdigit():
@@ -442,6 +478,7 @@ class SoldierPostingDecideView(PortalContextMixin, OfficerActionMixin, View):
             else:
                 soldier = posting.soldier
                 today = timezone.localdate()
+<<<<<<< HEAD
                 open_history = ServiceHistory.objects.filter(
                     person=soldier,
                     end_date__isnull=True,
@@ -461,6 +498,18 @@ class SoldierPostingDecideView(PortalContextMixin, OfficerActionMixin, View):
                         rank=soldier.rank,
                         start_date=today,
                     )
+=======
+                ServiceHistory.objects.filter(
+                    person=soldier,
+                    end_date__isnull=True,
+                ).update(end_date=today)
+                ServiceHistory.objects.create(
+                    person=soldier,
+                    organization=posting.to_organization,
+                    rank=soldier.rank,
+                    start_date=today,
+                )
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
                 soldier.organization = posting.to_organization
                 soldier.save(update_fields=["organization"])
                 posting.status = SoldierPosting.STATUS_ACCEPTED
@@ -519,12 +568,17 @@ class DutyAssignView(DutyAssignMixin, SoldierAccessMixin, CreateView):
 
 class DutyCompleteView(PortalContextMixin, DutyAssignMixin, View):
     def post(self, request, *args, **kwargs):
+<<<<<<< HEAD
         queryset = DutyAssignment.objects.select_related("soldier", "post")
         allowed_ids = get_accessible_organization_ids(request.user)
         if allowed_ids is not None:
             queryset = queryset.filter(soldier__organization_id__in=allowed_ids)
         assignment = get_object_or_404(
             queryset,
+=======
+        assignment = get_object_or_404(
+            DutyAssignment.objects.select_related("soldier", "post"),
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
             pk=kwargs["pk"],
             status=DutyAssignment.STATUS_ON_DUTY,
         )
@@ -540,7 +594,11 @@ class DutyCompleteView(PortalContextMixin, DutyAssignMixin, View):
             request,
             f"{assignment.soldier.name} completed duty at {assignment.post}.",
         )
+<<<<<<< HEAD
         return redirect(safe_redirect_target(request, "duty:assign"))
+=======
+        return redirect(request.POST.get("next") or "duty:assign")
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
 
 class DutyMapView(PortalContextMixin, CoRequiredMixin, TemplateView):
@@ -584,6 +642,7 @@ class DutyTourReportView(PortalContextMixin, CoRequiredMixin, View):
 
 class ParadeStateListView(SoldierAccessMixin, View):
     def get(self, request, *args, **kwargs):
+<<<<<<< HEAD
         today = timezone.localdate()
         state = ParadeState.objects.filter(report_date=today).first()
         if state is None:
@@ -596,6 +655,9 @@ class ParadeStateListView(SoldierAccessMixin, View):
             timezone.localdate(),
             refresh=True,
         )
+=======
+        state = generate_parade_state(request.user)
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         return redirect("duty:parade_state_edit", pk=state.pk)
 
 
@@ -609,7 +671,11 @@ class ParadeStateEditView(SoldierAccessMixin, View):
         return get_object_or_404(ParadeState, pk=pk)
 
     def get_organizations(self):
+<<<<<<< HEAD
         return get_parade_organizations(self.request.user)
+=======
+        return get_accessible_organizations(self.request.user)
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
     @staticmethod
     def number(value):
@@ -708,6 +774,7 @@ class ParadeStateEditView(SoldierAccessMixin, View):
             ],
         }
 
+<<<<<<< HEAD
     def render_page(self, parade_state, absence_form=None):
         context = get_portal_context(self.request)
         context.update(self.matrix_context(parade_state))
@@ -725,10 +792,17 @@ class ParadeStateEditView(SoldierAccessMixin, View):
                 ),
             }
         )
+=======
+    def render_page(self, parade_state):
+        context = get_portal_context(self.request)
+        context.update(self.matrix_context(parade_state))
+        context.update({"parade_state": parade_state})
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         from django.shortcuts import render
         return render(self.request, self.template_name, context)
 
     def get(self, request, *args, **kwargs):
+<<<<<<< HEAD
         return self.render_page(self.get_object())
 
     def post(self, request, *args, **kwargs):
@@ -764,3 +838,8 @@ class ParadeStateEditView(SoldierAccessMixin, View):
             messages.success(request, f'Uploaded "{document.title}".')
             return redirect("duty:parade_state_edit", pk=parade_state.pk)
         return self.render_page(parade_state, absence_form=form)
+=======
+        parade_state = self.get_object()
+        parade_state = generate_parade_state(request.user, parade_state.report_date)
+        return self.render_page(parade_state)
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf

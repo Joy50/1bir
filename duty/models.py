@@ -153,11 +153,14 @@ class DutyTour(models.Model):
         ordering = ["-number"]
         constraints = [
             models.UniqueConstraint(fields=["number"], name="unique_duty_tour_number"),
+<<<<<<< HEAD
             models.UniqueConstraint(
                 fields=["status"],
                 condition=models.Q(status="open"),
                 name="unique_open_duty_tour",
             ),
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         ]
 
     def __str__(self):
@@ -303,6 +306,7 @@ class ParadeStateCompany(models.Model):
     @property
     def present_total(self):
         return self.posted_total - self.absent_total
+<<<<<<< HEAD
 
 
 class ParadeAbsenceDocument(models.Model):
@@ -340,3 +344,5 @@ class ParadeAbsenceDocument(models.Model):
         if lower.endswith(".doc") or lower.endswith(".docx"):
             return "Word"
         return "File"
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf

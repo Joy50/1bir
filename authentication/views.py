@@ -94,6 +94,7 @@ class HomeView(PortalContextMixin, LoginRequiredMixin, TemplateView):
 
     template_name = "authentication/home.html"
 
+<<<<<<< HEAD
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if context.get("active_section_key") == "dashboard":
@@ -106,6 +107,8 @@ class HomeView(PortalContextMixin, LoginRequiredMixin, TemplateView):
             )
         return context
 
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
 # ============================================================
 # Login

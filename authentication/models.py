@@ -24,7 +24,11 @@ class UserManager(BaseUserManager):
 
         if extra_fields["role"] == User.ROLE_ADMIN:
             extra_fields.setdefault("is_staff", True)
+<<<<<<< HEAD
             extra_fields.setdefault("is_superuser", False)
+=======
+            extra_fields.setdefault("is_superuser", True)
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         else:
             extra_fields.setdefault("is_staff", False)
             extra_fields.setdefault("is_superuser", False)
@@ -172,6 +176,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     def save(self, *args, **kwargs):
         if self.role == self.ROLE_ADMIN:
             self.is_staff = True
+<<<<<<< HEAD
+=======
+            self.is_superuser = True
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         else:
             self.is_staff = False
             self.is_superuser = False
@@ -184,7 +192,20 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     @property
     def is_co(self):
+<<<<<<< HEAD
         return self.role == self.ROLE_CO
+=======
+        if self.role == self.ROLE_CO:
+            return True
+        appointment = (self.appointment or "").strip().lower()
+        return appointment in {
+            "co",
+            "c.o",
+            "c.o.",
+            "oc",
+            "commanding officer",
+        } or "commanding officer" in appointment
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
     @property
     def is_officer(self):
@@ -209,6 +230,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def can_assign_duty(self):
         return self.role in {self.ROLE_ADMIN, self.ROLE_CO, self.ROLE_OFFICER}
+<<<<<<< HEAD
 
     @property
     def can_apply_leave(self):
@@ -354,3 +376,5 @@ class UnitHighlight(models.Model):
 
     def __str__(self):
         return self.title
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf

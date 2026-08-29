@@ -12,7 +12,11 @@
   .leave-company-link { color: #123524; font-weight: 800; text-decoration: none; }
   .leave-company-link:hover { text-decoration: underline; }
   .leave-board-title { display: table; margin: 0 auto 1rem; padding: .55rem 2rem; border-radius: .4rem; background: linear-gradient(#477f35, #164a19); color: #fff; box-shadow: 0 3px 7px #999; font-weight: 800; }
+<<<<<<< HEAD
   .individual-leave-table { min-width: 1280px; font-size: .82rem; }
+=======
+  .individual-leave-table { min-width: 1180px; font-size: .82rem; }
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
   .individual-leave-table th, .individual-leave-table td { text-align: center; }
 </style>
 {% endblock %}
@@ -22,7 +26,11 @@
   <div>
     <div class="section-eyebrow">A Matter · Leave</div>
     <h1>Leave State{% if selected_company %} · {{ selected_company }}{% else %} · 1 BIR{% endif %}</h1>
+<<<<<<< HEAD
     <p class="text-secondary mb-0">Privilege and casual leave for {{ selected_year }}. Company clerks apply; any officer of that company or the CO can approve.</p>
+=======
+    <p class="text-secondary mb-0">Privilege leave completion summary for {{ selected_year }}.</p>
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
   </div>
   {% if selected_company %}<a href="{% url 'training:leave_list' %}?year={{ selected_year }}" class="btn btn-outline-secondary">All companies</a>{% endif %}
 </div>
@@ -51,6 +59,7 @@
   </form>
 </div></div>
 
+<<<<<<< HEAD
 {% if pending_applications %}
 <div class="card form-panel mb-4"><div class="card-body p-4"><h2 class="h6">Pending Leave Applications</h2>
   <div class="table-responsive"><table class="table table-ledger mb-0"><thead><tr><th>Soldier</th><th>Company</th><th>Slot</th><th>Dates</th><th>Days</th>{% if can_approve %}<th></th>{% endif %}</tr></thead><tbody>
@@ -59,6 +68,8 @@
 </div></div>
 {% endif %}
 
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 {% if not selected_company %}
 <div class="card form-panel"><div class="card-body p-0 table-responsive">
   <table class="table table-bordered leave-board mb-0">
@@ -85,6 +96,7 @@
 <div class="card form-panel mb-4"><div class="card-body p-0 table-responsive">
   <table class="table table-bordered leave-board individual-leave-table mb-0">
     <thead>
+<<<<<<< HEAD
       <tr><th rowspan="2">Army No</th><th rowspan="2">Rk</th><th rowspan="2">Name</th><th rowspan="2">Pl</th><th rowspan="2">Sec</th><th colspan="3">P Lve State</th><th colspan="{{ casual_colspan }}">C Lve State</th><th colspan="3">Total Lve Availed</th><th rowspan="2"></th></tr>
       <tr>
         <th>Dt</th><th>No of Days</th><th>Completed</th>
@@ -93,11 +105,16 @@
         {% endfor %}
         <th>P Lve</th><th>C Lve</th><th>Total</th>
       </tr>
+=======
+      <tr><th rowspan="2">Army No</th><th rowspan="2">Rk</th><th rowspan="2">Name</th><th rowspan="2">Pl</th><th rowspan="2">Sec</th><th colspan="3">P Lve State</th><th colspan="4">C Lve State</th><th colspan="3">Total Lve Availed</th><th rowspan="2"></th></tr>
+      <tr><th>Dt</th><th>No of Days</th><th>Completed</th><th>C Lve-1 Dt</th><th>Days</th><th>C Lve-2,3,4,5</th><th>Days</th><th>P Lve</th><th>C Lve</th><th>Total</th></tr>
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
     </thead>
     <tbody>
       {% for soldier in soldiers %}<tr>
         <td>{{ soldier.army_number }}</td><td>{{ soldier.latest_rank_name|default:soldier.rank }}</td><td>{{ soldier.name }}</td><td>{{ soldier.platoon_name }}</td><td>—</td>
         <td>{% if soldier.p_leave %}{{ soldier.p_leave.from_date|date:"d M Y" }}{% else %}—{% endif %}</td><td>{{ soldier.p_leave_days }}</td><td>{% if soldier.p_leave %}Yes{% else %}No{% endif %}</td>
+<<<<<<< HEAD
         {% for leave in soldier.casual_columns %}
           <td>{% if leave %}{{ leave.from_date|date:"d M Y" }}{% else %}—{% endif %}</td>
           <td>{% if leave %}{{ leave.no_days }}{% else %}0{% endif %}</td>
@@ -105,8 +122,27 @@
         <td>{{ soldier.p_leave_days }}</td><td>{{ soldier.c_leave_days }}</td><td>{{ soldier.combined_leave_days }}</td>
         <td><a href="{% url 'training:leave_manage' soldier.pk %}" class="btn btn-bir btn-sm">{% if can_apply %}Apply{% elif can_approve %}Review{% else %}View{% endif %}</a></td>
       </tr>{% empty %}<tr><td colspan="{{ individual_colspan }}">No soldiers found in this company.</td></tr>{% endfor %}
+=======
+        <td>{% if soldier.c1_leave %}{{ soldier.c1_leave.from_date|date:"d M Y" }}{% else %}—{% endif %}</td><td>{% if soldier.c1_leave %}{{ soldier.c1_leave.no_days }}{% else %}0{% endif %}</td>
+        <td>{% for leave in soldier.other_casual %}{{ leave.from_date|date:"d M" }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td>
+        <td>{% for leave in soldier.other_casual %}{{ leave.no_days }}{% if not forloop.last %}+{% endif %}{% empty %}0{% endfor %}</td>
+        <td>{{ soldier.p_leave_days }}</td><td>{{ soldier.c_leave_days }}</td><td>{{ soldier.combined_leave_days }}</td>
+        <td><a href="{% url 'training:leave_manage' soldier.pk %}" class="btn btn-bir btn-sm">{% if can_apply %}Apply{% elif can_approve %}Review{% else %}View{% endif %}</a></td>
+      </tr>{% empty %}<tr><td colspan="16">No soldiers found in this company.</td></tr>{% endfor %}
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
     </tbody>
   </table>
 </div></div>
 {% endif %}
+<<<<<<< HEAD
+=======
+
+{% if pending_applications %}
+<div class="card form-panel"><div class="card-body p-4"><h2 class="h6">Pending Leave Applications</h2>
+  <div class="table-responsive"><table class="table table-ledger mb-0"><thead><tr><th>Soldier</th><th>Company</th><th>Slot</th><th>Dates</th><th>Days</th>{% if can_approve %}<th></th>{% endif %}</tr></thead><tbody>
+  {% for leave in pending_applications %}<tr><td>{{ leave.solider.army_number }} {{ leave.solider.name }}</td><td>{{ leave.solider.organization }}</td><td>{{ leave.get_slot_display }}</td><td>{{ leave.from_date|date:"d M Y" }} – {{ leave.to_date|date:"d M Y" }}</td><td>{{ leave.no_days }}</td>{% if can_approve %}<td><form method="post" action="{% url 'training:leave_decide' leave.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="approve"><button class="btn btn-bir btn-sm">Approve</button></form> <form method="post" action="{% url 'training:leave_decide' leave.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="reject"><button class="btn btn-outline-secondary btn-sm">Reject</button></form></td>{% endif %}</tr>{% endfor %}
+  </tbody></table></div>
+</div></div>
+{% endif %}
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 {% endblock %}

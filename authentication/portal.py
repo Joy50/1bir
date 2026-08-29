@@ -51,6 +51,15 @@ PORTAL_SECTIONS = {
                 "admin_only": True,
             },
             {
+<<<<<<< HEAD
+=======
+                "title": "Server Monitoring",
+                "text": "Check CPU, memory, disk, and host resource usage.",
+                "url_name": "common:server_monitor",
+                "admin_only": True,
+            },
+            {
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
                 "title": "Statistics",
                 "text": "Personnel, ranks, reports, and other unit counts.",
                 "url_name": "common:statistics",
@@ -226,6 +235,7 @@ def _items(section, *titles):
 
 
 PORTAL_SECTIONS = {
+<<<<<<< HEAD
     "dashboard": {
         "label": "Dashboard",
         "icon": "bi-flag",
@@ -233,6 +243,8 @@ PORTAL_SECTIONS = {
         "landing_url_name": "authentication:home",
         "items": [],
     },
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
     "a-matter": {
         "label": "A Matter",
         "icon": "bi-people",
@@ -283,7 +295,10 @@ PORTAL_SECTIONS = {
     "q-matter": {
         "label": "Q Matter",
         "icon": "bi-box-seam",
+<<<<<<< HEAD
         "admin_only": True,
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         "description": "Quartermaster stores, equipment, transport, and logistics administration.",
         "landing_url_name": "duty:post_list",
         "path_prefixes": ("/duty/posts",),
@@ -301,6 +316,7 @@ PORTAL_SECTIONS = {
         "label": "Misc",
         "icon": "bi-grid",
         "description": "User administration, master data, logs, monitoring, and miscellaneous services.",
+<<<<<<< HEAD
         "path_prefixes": ("/users", "/dashboard"),
         "items": [
             {
@@ -313,6 +329,11 @@ PORTAL_SECTIONS = {
                 item for item in _MODULE_SECTIONS["admin"]["items"]
                 if item["title"] != "Duty Posts"
             ],
+=======
+        "items": [
+            item for item in _MODULE_SECTIONS["admin"]["items"]
+            if item["title"] != "Duty Posts"
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         ],
     },
 }
@@ -337,6 +358,7 @@ def get_portal_context(request):
 
     default_section = "a-matter"
     section_key = request.GET.get("section")
+<<<<<<< HEAD
     home_path = reverse("authentication:home")
 
     if not section_key:
@@ -351,10 +373,23 @@ def get_portal_context(request):
                 ):
                     section_key = key
                     break
+=======
+
+    if not section_key:
+        for key, data in visible_sections.items():
+            prefixes = data.get("path_prefixes") or ()
+            if any(
+                request.path == prefix or request.path.startswith(prefix + "/")
+                for prefix in prefixes
+            ):
+                section_key = key
+                break
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
     if section_key not in visible_sections:
         section_key = default_section
 
+<<<<<<< HEAD
     user_role = getattr(request.user, "role", "")
     user_is_co = bool(getattr(request.user, "is_co", False))
 
@@ -386,13 +421,44 @@ def get_portal_context(request):
         section_key = "a-matter" if "a-matter" in visible_sections else next(iter(visible_sections))
         section = visible_sections[section_key]
         items = visible_items_for(section)
+=======
+    section = visible_sections[section_key]
+    items = []
+
+    user_role = getattr(request.user, "role", "")
+    user_is_co = bool(getattr(request.user, "is_co", False))
+
+    for item in section["items"]:
+        if item.get("admin_only") and not is_admin:
+            continue
+        allowed_roles = item.get("roles")
+        if allowed_roles and not is_admin:
+            if user_role not in allowed_roles and not (
+                user_is_co and "co" in allowed_roles
+            ):
+                continue
+
+        entry = {
+            "title": item["title"],
+            "text": item["text"],
+            "url": None,
+        }
+
+        if item.get("url_name"):
+            entry["url"] = reverse(item["url_name"])
+
+        items.append(entry)
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
     sidebar = []
 
     for key, data in visible_sections.items():
+<<<<<<< HEAD
         preview_items = visible_items_for(data)
         if not preview_items and key != "dashboard":
             continue
+=======
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         landing_url_name = data.get("landing_url_name")
         if landing_url_name:
             section_url = reverse(landing_url_name)

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from io import BytesIO
 
 from django.test import TestCase, override_settings
@@ -194,3 +195,8 @@ class UnitDashboardTests(TestCase):
         self.assertContains(home, "Parade")
         self.assertContains(home, "UN Mission")
 
+=======
+from django.test import TestCase
+
+# Create your tests here.
+>>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
