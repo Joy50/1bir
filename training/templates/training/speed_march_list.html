@@ -1,0 +1,21 @@
+{% extends "authentication/dashboard_base.html" %}
+{% block title %}Spd March State · 1 BIR{% endblock %}
+{% block dashboard_content %}
+<div class="section-header text-center"><div class="section-eyebrow">G Matter // Speed March</div><h1>Spd March State – {% if selected_organization %}{{ selected_organization }}{% else %}1 BIR{% endif %}</h1></div>
+<div class="card form-panel mb-4"><div class="card-body p-4"><form method="get" class="row g-3 align-items-end">
+  <div class="col-sm-4 col-lg-3"><label class="form-label" for="id_year">Year</label><select class="form-select" id="id_year" name="year">{% for year in year_choices %}<option value="{{ year }}"{% if year == selected_year %} selected{% endif %}>{{ year }}</option>{% endfor %}</select></div>
+  <div class="col-sm-5 col-lg-5"><label class="form-label" for="id_organization">Company</label><select class="form-select" id="id_organization" name="organization"><option value="">All Companies</option>{% for organization in organizations %}<option value="{{ organization.pk }}"{% if organization_filter == organization.pk|stringformat:"s" %} selected{% endif %}>{{ organization }}</option>{% endfor %}</select></div>
+  <div class="col-sm-12 col-lg-4"><div class="d-flex flex-nowrap gap-2"><button class="btn btn-bir flex-fill" type="submit">Filter</button><a class="btn btn-outline-secondary flex-fill" data-clear-filters href="{% url 'training:speed_march_list' %}">Clear</a></div></div>
+</form></div></div>
+<div class="card form-panel"><div class="card-body p-0"><div class="table-responsive"><table class="table table-bordered mb-0 text-center align-middle">
+  <thead><tr><th rowspan="2">{% if selected_organization %}Cat{% else %}Coy{% endif %}</th><th rowspan="2">Posted</th><th rowspan="2">Exempted</th><th rowspan="2">Eligible</th><th rowspan="2">Not Atnd</th><th rowspan="2">Atnd</th><th colspan="4">Atnd</th><th rowspan="2">Rmk</th></tr><tr><th>1st</th><th>2nd</th><th>3rd</th><th>4th</th></tr></thead>
+  <tbody>{% for row in rows %}<tr><th>{{ row.label }}</th><td>{{ row.posted }}</td><td>{{ row.exempted }}</td><td>{{ row.eligible }}</td><td>{{ row.not_attended }}</td><td>{{ row.attended }}</td>{% for count in row.attempts %}<td>{{ count }}</td>{% endfor %}<td></td></tr>{% endfor %}<tr class="fw-bold"><th>Total</th><td>{{ total.posted }}</td><td>{{ total.exempted }}</td><td>{{ total.eligible }}</td><td>{{ total.not_attended }}</td><td>{{ total.attended }}</td>{% for count in total.attempts %}<td>{{ count }}</td>{% endfor %}<td></td></tr></tbody>
+</table></div></div></div>
+{% if selected_organization %}
+<div class="section-header text-center mt-5"><h2>Indl Spd March Record – {{ selected_organization }}</h2></div>
+<div class="card form-panel"><div class="card-body p-0"><div class="table-responsive"><table class="table table-bordered table-ledger mb-0 align-middle text-center">
+  <thead><tr><th>Ser</th><th>Army No</th><th>Rk</th><th>Name</th><th>Cat</th><th>1st</th><th>2nd</th><th>3rd</th><th>4th</th><th></th></tr></thead>
+  <tbody>{% for soldier in individual_soldiers %}<tr><td>{{ forloop.counter }}</td><td>{{ soldier.army_number }}</td><td>{{ soldier.rank }}</td><td class="text-start">{{ soldier.name }}</td><td>{{ soldier.rank.get_category_display }}</td>{% for record in soldier.speed_attempts %}<td>{% if record %}{{ record.date_of_event|date:"d M Y" }}<br>{{ record.result|default:"—" }}{% else %}—{% endif %}</td>{% endfor %}<td><a class="btn btn-bir btn-sm" href="{% url 'training:speed_march_edit' soldier.pk %}">Edit</a></td></tr>{% empty %}<tr><td colspan="10">No soldiers found.</td></tr>{% endfor %}</tbody>
+</table></div></div></div>
+{% endif %}
+{% endblock %}

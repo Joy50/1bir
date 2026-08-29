@@ -1,0 +1,39 @@
+{% extends "authentication/dashboard_base.html" %}
+{% block title %}IPFT State · 1 BIR{% endblock %}
+{% block dashboard_content %}
+<div class="section-header text-center">
+  <div class="section-eyebrow">G Matter // IPFT</div>
+  <h1>IPFT State – {% if selected_organization %}{{ selected_organization }}{% else %}1 BIR{% endif %}</h1>
+  <p class="text-secondary mb-0">Automated company summary for {{ selected_type }}, {{ selected_year }}.</p>
+</div>
+
+<div class="card form-panel mb-4"><div class="card-body p-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-sm-4 col-lg-2"><label class="form-label" for="id_year">Year</label><select class="form-select" id="id_year" name="year">{% for year in year_choices %}<option value="{{ year }}"{% if year == selected_year %} selected{% endif %}>{{ year }}</option>{% endfor %}</select></div>
+    <div class="col-sm-4 col-lg-3"><label class="form-label" for="id_type">IPFT</label><select class="form-select" id="id_type" name="type">{% for value, label in type_choices %}<option value="{{ value }}"{% if value == selected_type %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div class="col-sm-4 col-lg-4"><label class="form-label" for="id_organization">Company</label><select class="form-select" id="id_organization" name="organization"><option value="">All Companies</option>{% for organization in organizations %}<option value="{{ organization.pk }}"{% if organization_filter == organization.pk|stringformat:"s" %} selected{% endif %}>{{ organization }}</option>{% endfor %}</select></div>
+    <div class="col-sm-12 col-lg-3"><div class="d-flex flex-nowrap gap-2"><button type="submit" class="btn btn-bir flex-fill">Filter</button><a href="{% url 'training:ipft_list' %}" class="btn btn-outline-secondary flex-fill" data-clear-filters>Clear</a></div></div>
+  </form>
+</div></div>
+
+<div class="card form-panel"><div class="card-body p-0"><div class="table-responsive">
+  <table class="table table-bordered mb-0 align-middle text-center ipft-summary-table">
+    <thead><tr><th>{% if selected_organization %}Cat{% else %}Coy{% endif %}</th><th>Posted</th><th>Exempted</th><th>Eligible</th><th>Not Attended</th><th>Attended</th><th>Passed</th><th>Failed</th><th>%</th><th>Rmk</th></tr></thead>
+    <tbody>
+      {% for row in summary_rows %}<tr><th>{{ row.label }}</th><td>{{ row.posted }}</td><td>{{ row.exempted }}</td><td>{{ row.eligible }}</td><td>{{ row.not_attended }}</td><td>{{ row.attended }}</td><td>{{ row.passed }}</td><td>{{ row.failed }}</td><td>{{ row.percentage }}%</td><td></td></tr>{% empty %}<tr><td colspan="10">No companies are available for this filter.</td></tr>{% endfor %}
+      <tr class="fw-bold"><th>Total</th><td>{{ summary_total.posted }}</td><td>{{ summary_total.exempted }}</td><td>{{ summary_total.eligible }}</td><td>{{ summary_total.not_attended }}</td><td>{{ summary_total.attended }}</td><td>{{ summary_total.passed }}</td><td>{{ summary_total.failed }}</td><td>{{ summary_total.percentage }}%</td><td></td></tr>
+    </tbody>
+  </table>
+</div></div></div>
+{% if selected_organization %}
+<div class="section-header text-center mt-5"><h2>Indl IPFT Record – {{ selected_organization }}</h2></div>
+<div class="card form-panel"><div class="card-body p-0"><div class="table-responsive">
+  <table class="table table-bordered table-ledger mb-0 align-middle">
+    <thead><tr><th>Ser</th><th>Army No</th><th>Rk</th><th>Name</th><th>Cat</th><th>Status</th><th>Chance</th><th>Date</th><th>Result</th><th></th></tr></thead>
+    <tbody>{% for soldier in individual_soldiers %}<tr><td>{{ forloop.counter }}</td><td>{{ soldier.army_number }}</td><td>{{ soldier.rank }}</td><td>{{ soldier.name }}</td><td>{{ soldier.rank.get_category_display }}</td><td>{% if soldier.ipft_exempted %}Exempted{% elif soldier.summary_ipft %}Attended{% else %}Not Attended{% endif %}</td><td>{{ soldier.summary_ipft.chance|default:"—" }}</td><td>{{ soldier.summary_ipft.date|date:"d M Y"|default:"—" }}</td><td>{{ soldier.summary_ipft.result|default:"—" }}</td><td><a class="btn btn-bir btn-sm" href="{% url 'training:ipft_edit' soldier.pk %}">Edit</a></td></tr>{% empty %}<tr><td colspan="10">No soldiers found in this company.</td></tr>{% endfor %}</tbody>
+  </table>
+</div></div></div>
+{% endif %}
+<div class="mt-3 d-flex gap-2"><a href="{% url 'training:training_home' %}" class="btn btn-outline-secondary">Back to G Matter</a>{% if organization_filter %}<a href="{% url 'common:soldier_list' %}?organization={{ organization_filter }}" class="btn btn-bir">View Company Soldiers</a>{% endif %}</div>
+<style>.ipft-summary-table th,.ipft-summary-table td{min-width:86px}.ipft-summary-table thead th{white-space:normal}</style>
+{% endblock %}

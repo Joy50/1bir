@@ -1,0 +1,8 @@
+asgiref
+charset-normalizer
+Django
+pillow
+reportlab
+sqlparse
+tzdata
+whitenoise

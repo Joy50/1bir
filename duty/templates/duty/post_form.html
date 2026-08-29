@@ -1,0 +1,70 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}Duty Post · 1 BIR{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header">
+  <div class="section-eyebrow">Q Matter · Duty Post</div>
+  <h1>{% if object %}Edit {{ object.name }}{% else %}Add duty post{% endif %}</h1>
+  <p class="text-secondary mb-0">Click the map to place the post. Latitude and longitude fill automatically.</p>
+</div>
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card form-panel">
+      <div class="card-body p-4">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% for field in form %}
+            <div class="mb-3">
+              {% if field.field.widget.input_type == "checkbox" %}
+                <div class="form-check">{{ field }} <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label></div>
+              {% else %}
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+              {% endif %}
+              {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+            </div>
+          {% endfor %}
+          <button class="btn btn-bir" type="submit">Save post</button>
+          <a class="btn btn-outline-secondary" href="{% url 'duty:post_list' %}">Cancel</a>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card form-panel">
+      <div class="card-body p-0">
+        <div id="post-picker-map" class="duty-map"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const latField = document.getElementById("id_latitude");
+  const lngField = document.getElementById("id_longitude");
+  const startLat = parseFloat(latField.value) || {{ map_lat|default:"21.4324" }};
+  const startLng = parseFloat(lngField.value) || {{ map_lng|default:"92.1008" }};
+  const map = L.map("post-picker-map").setView([startLat, startLng], {{ map_zoom|default:15 }});
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap"
+  }).addTo(map);
+  let marker = L.marker([startLat, startLng], {draggable: true}).addTo(map);
+  function sync(latlng) {
+    latField.value = latlng.lat.toFixed(6);
+    lngField.value = latlng.lng.toFixed(6);
+  }
+  marker.on("dragend", function () { sync(marker.getLatLng()); });
+  map.on("click", function (event) {
+    marker.setLatLng(event.latlng);
+    sync(event.latlng);
+  });
+</script>
+{% endblock %}

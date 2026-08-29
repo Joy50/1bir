@@ -1,0 +1,28 @@
+{% include "common/partials/training_board.html" with title="Yearly Career Plan" rows=soldier.yearly_plans.all empty="No yearly career plan recorded." %}
+<div class="dossier-panel card form-panel">
+  <div class="card-body p-4">
+    <div class="dossier-panel-head">
+      <span class="form-eyebrow mb-0">Training boards</span>
+    </div>
+    <p class="text-secondary mb-2">IPFT, RET, leave, qualifications, speed march, and assault course live under Training.</p>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'training:yearly_plan_edit' soldier.pk %}">Yearly plan</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'training:qual_edit' soldier.pk %}">Qualification</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'training:ipft_edit' soldier.pk %}">IPFT</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'training:leave_manage' soldier.pk %}">Leave</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'training:speed_march_edit' soldier.pk %}">Speed march</a>
+    </div>
+    {% if soldier.ipft_records.all %}
+      <div class="table-responsive mt-3">
+        <table class="table table-ledger mb-0">
+          <thead><tr><th>IPFT</th><th>Chance</th><th>Date</th><th>Result</th></tr></thead>
+          <tbody>
+            {% for item in soldier.ipft_records.all %}
+              <tr><td>{{ item.type_of_ipft }}</td><td>{{ item.chance }}</td><td>{{ item.date|date:"d M Y" }}</td><td>{{ item.result|default:"—" }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</div>

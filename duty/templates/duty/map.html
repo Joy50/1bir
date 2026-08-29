@@ -1,0 +1,102 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}Duty Map · 1 BIR{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header d-flex flex-wrap justify-content-between align-items-end gap-3">
+  <div>
+    <div class="section-eyebrow">CO board</div>
+    <h1>Duty map</h1>
+    <p class="text-secondary mb-0">
+      Live OpenStreetMap of Ramu Cantonment.
+      {% if progress.tour %}Tour {{ progress.tour.number }} stays unreported until every available soldier has finished.{% endif %}
+    </p>
+  </div>
+  {% if request.user.can_view_duty_map %}
+  <form method="post" action="{% url 'duty:report_tour' %}">
+    {% csrf_token %}
+    <button class="btn btn-bir" type="submit" {% if not progress.can_report %}disabled{% endif %}>
+      Report tour
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+{% if not progress.can_report %}
+  <div class="alert alert-warning">
+    Reporting is locked.
+    {% if progress.still_due %}{{ progress.still_due|length }} soldier{{ progress.still_due|length|pluralize }} still due.{% endif %}
+    {% if progress.on_duty %} {{ progress.on_duty|length }} still on post.{% endif %}
+    Complete the full tour before the roster is reported.
+  </div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Still due</div><div class="stat-value">{{ progress.still_due|length }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">On duty</div><div class="stat-value">{{ progress.on_duty|length }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Finished</div><div class="stat-value">{{ progress.finished|length }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">On leave</div><div class="stat-value">{{ progress.on_leave_count }}</div></div></div>
+</div>
+
+<div class="card form-panel mb-4">
+  <div class="card-body p-0">
+    <div id="duty-osm-map" class="duty-map duty-map-tall"></div>
+  </div>
+</div>
+
+<div class="card form-panel">
+  <div class="card-body p-4">
+    <div class="form-eyebrow mb-3">Posts</div>
+    <table class="table table-ledger mb-0">
+      <thead><tr><th>Post</th><th>Soldier</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for marker in markers %}
+          <tr>
+            <td>{{ marker.name }}</td>
+            <td>{% if marker.soldier %}{{ marker.army_number }} {{ marker.soldier }}{% else %}—{% endif %}</td>
+            <td>{{ marker.status }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="3" class="text-secondary">Add duty posts from Admin first.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const markers = {{ markers_json|safe }};
+  const map = L.map("duty-osm-map").setView([{{ map_lat }}, {{ map_lng }}], {{ map_zoom }});
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap"
+  }).addTo(map);
+  const bounds = [];
+  markers.forEach(function (item) {
+    const occupied = Boolean(item.soldier);
+    const pin = L.circleMarker([item.lat, item.lng], {
+      radius: 10,
+      color: occupied ? "#0a1f15" : "#c9a84c",
+      fillColor: occupied ? "#c45a1a" : "#c9a84c",
+      fillOpacity: 0.9,
+      weight: 2
+    }).addTo(map);
+    pin.bindPopup(
+      "<strong>" + item.name + "</strong><br>" +
+      (occupied
+        ? item.rank + " " + item.soldier + " (" + item.army_number + ")"
+        : "Vacant")
+    );
+    bounds.push([item.lat, item.lng]);
+  });
+  if (bounds.length) {
+    map.fitBounds(bounds, {padding: [28, 28], maxZoom: 16});
+  }
+</script>
+{% endblock %}

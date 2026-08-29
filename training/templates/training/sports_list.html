@@ -1,0 +1,78 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}Maj Training and Sports · 1 BIR{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header">
+  <div class="section-eyebrow">Training // Sports</div>
+  <h1>Participation in Maj Training and Sports</h1>
+  <p class="text-secondary mb-0">Sports and training competitions for soldiers in your companies.</p>
+  <div class="section-header-actions">
+    <a href="{% url 'training:training_home' %}" class="btn btn-outline-secondary">Back to Training</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Unit Strength</div><div class="stat-value">{{ stats.total }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">With Records</div><div class="stat-value">{{ stats.recorded }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Sports</div><div class="stat-value">{{ stats.sports }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Training</div><div class="stat-value">{{ stats.training }}</div></div></div>
+</div>
+
+<div class="card form-panel mb-4">
+  <div class="card-body p-4">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label" for="id_search">Search</label>
+        <input type="text" class="form-control" id="id_search" name="q" value="{{ search_query }}" placeholder="Name or army number">
+      </div>
+      <div class="col-md-5">
+        <label class="form-label" for="id_organization">Company / Organization</label>
+        <select class="form-select" id="id_organization" name="organization">
+          <option value="">All my companies</option>
+          {% for organization in organizations %}
+            <option value="{{ organization.pk }}" {% if organization_filter == organization.pk|stringformat:"s" %}selected{% endif %}>{{ organization.organization_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2"><button type="submit" class="btn btn-bir w-100">Filter</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="card form-panel">
+  <div class="card-body p-4">
+    <div class="table-responsive">
+      <table class="table table-ledger mb-0">
+        <thead>
+          <tr>
+            <th>Army No</th><th>Latest Rank</th><th>Name</th><th>Company</th>
+            <th>Sports</th><th>Training</th><th>Recent entries</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for soldier in soldiers %}
+            <tr>
+              <td>{{ soldier.army_number }}</td>
+              <td>{{ soldier.latest_rank_name|default:soldier.rank }}</td>
+              <td>{{ soldier.name }}</td>
+              <td>{{ soldier.organization }}</td>
+              <td>{{ soldier.sports_count }}</td>
+              <td>{{ soldier.training_count }}</td>
+              <td>
+                {% for row in soldier.sports_records %}
+                  {{ row.name_of_comp }}{% if not forloop.last %}; {% endif %}
+                {% empty %}—{% endfor %}
+              </td>
+              <td class="text-end"><a href="{% url 'training:sports_edit' soldier.pk %}" class="btn btn-bir btn-sm">Edit</a></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="8">No soldiers match the current filters.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "training/pagination.html" %}
+  </div>
+</div>
+{% endblock %}

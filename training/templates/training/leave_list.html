@@ -1,0 +1,112 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}Leave State · 1 BIR{% endblock %}
+
+{% block extra_css %}
+<style>
+  .leave-board th, .leave-board td { border-color: #19719b; padding: .55rem .65rem; vertical-align: middle; }
+  .leave-board thead th { background: #f7f7f7; color: #111; text-align: center; }
+  .leave-board tbody tr:nth-child(odd) td { background: #d9e8ef; }
+  .leave-board .number { text-align: center; }
+  .leave-board .total-row th, .leave-board .total-row td { background: #fff; font-weight: 800; }
+  .leave-company-link { color: #123524; font-weight: 800; text-decoration: none; }
+  .leave-company-link:hover { text-decoration: underline; }
+  .leave-board-title { display: table; margin: 0 auto 1rem; padding: .55rem 2rem; border-radius: .4rem; background: linear-gradient(#477f35, #164a19); color: #fff; box-shadow: 0 3px 7px #999; font-weight: 800; }
+  .individual-leave-table { min-width: 1280px; font-size: .82rem; }
+  .individual-leave-table th, .individual-leave-table td { text-align: center; }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header d-flex flex-wrap justify-content-between align-items-end gap-3">
+  <div>
+    <div class="section-eyebrow">A Matter · Leave</div>
+    <h1>Leave State{% if selected_company %} · {{ selected_company }}{% else %} · 1 BIR{% endif %}</h1>
+    <p class="text-secondary mb-0">Privilege and casual leave for {{ selected_year }}. Company clerks apply; any officer of that company or the CO can approve.</p>
+  </div>
+  {% if selected_company %}<a href="{% url 'training:leave_list' %}?year={{ selected_year }}" class="btn btn-outline-secondary">All companies</a>{% endif %}
+</div>
+
+<div class="card form-panel mb-3"><div class="card-body p-3">
+  <form method="get" class="row g-3 align-items-end">
+    {% if selected_company %}<input type="hidden" name="company" value="{{ selected_company.pk }}">{% endif %}
+    <div class="{% if selected_company %}col-md-3{% else %}col-md-4{% endif %}">
+      <label class="form-label" for="leaveYear">Year</label>
+      <select class="form-select" id="leaveYear" name="year" onchange="this.form.submit()">
+        {% for year in year_choices %}<option value="{{ year }}"{% if selected_year == year %} selected{% endif %}>{{ year }}</option>{% endfor %}
+      </select>
+    </div>
+    {% if selected_company %}
+      <div class="col-md-5">
+        <label class="form-label" for="leaveSearch">Search individual</label>
+        <input class="form-control" id="leaveSearch" name="q" value="{{ search_query }}" placeholder="Army number or name">
+      </div>
+      <div class="col-md-4">
+        <div class="d-flex gap-2">
+          <button class="btn btn-bir flex-grow-1" type="submit">Search</button>
+          <a class="btn btn-outline-secondary" data-clear-filters href="?company={{ selected_company.pk }}&year={{ selected_year }}">Clear</a>
+        </div>
+      </div>
+    {% endif %}
+  </form>
+</div></div>
+
+{% if pending_applications %}
+<div class="card form-panel mb-4"><div class="card-body p-4"><h2 class="h6">Pending Leave Applications</h2>
+  <div class="table-responsive"><table class="table table-ledger mb-0"><thead><tr><th>Soldier</th><th>Company</th><th>Slot</th><th>Dates</th><th>Days</th>{% if can_approve %}<th></th>{% endif %}</tr></thead><tbody>
+  {% for leave in pending_applications %}<tr><td>{{ leave.solider.army_number }} {{ leave.solider.name }}</td><td>{{ leave.solider.organization }}</td><td>{{ leave.get_slot_display }}</td><td>{{ leave.from_date|date:"d M Y" }} – {{ leave.to_date|date:"d M Y" }}</td><td>{{ leave.no_days }}</td>{% if can_approve %}<td><form method="post" action="{% url 'training:leave_decide' leave.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="approve"><input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn btn-bir btn-sm">Approve</button></form> <form method="post" action="{% url 'training:leave_decide' leave.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="reject"><input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn btn-outline-secondary btn-sm">Reject</button></form></td>{% endif %}</tr>{% endfor %}
+  </tbody></table></div>
+</div></div>
+{% endif %}
+
+{% if not selected_company %}
+<div class="card form-panel"><div class="card-body p-0 table-responsive">
+  <table class="table table-bordered leave-board mb-0">
+    <thead><tr><th>Ser</th><th>Coy</th><th>Str</th><th>P Lve<br>Completed</th><th>Yet to<br>Complete</th><th>Rmk</th></tr></thead>
+    <tbody>
+      {% for row in company_summary_rows %}<tr><td class="number">{{ forloop.counter }}.</td><td><a class="leave-company-link" href="{% url 'training:leave_list' %}?company={{ row.company.pk }}&year={{ selected_year }}">{{ row.company }}</a></td><td class="number">{{ row.strength }}</td><td class="number">{{ row.completed }}</td><td class="number">{{ row.remaining }}</td><td></td></tr>{% endfor %}
+      <tr class="total-row"><th colspan="2">Total</th><td class="number">{{ company_summary_total.strength }}</td><td class="number">{{ company_summary_total.completed }}</td><td class="number">{{ company_summary_total.remaining }}</td><td></td></tr>
+    </tbody>
+  </table>
+</div></div>
+{% else %}
+<div class="leave-board-title">Lve State – {{ selected_company }}</div>
+<div class="card form-panel mb-4"><div class="card-body p-0 table-responsive">
+  <table class="table table-bordered leave-board mb-0">
+    <thead><tr><th>Ser</th><th>Pl</th><th>Str</th><th>P Lve<br>Completed</th><th>Yet to<br>Complete</th><th>Rmk</th></tr></thead>
+    <tbody>
+      {% for row in platoon_summary_rows %}<tr><td class="number">{{ forloop.counter }}.</td><td>{{ row.platoon }}</td><td class="number">{{ row.strength }}</td><td class="number">{{ row.completed }}</td><td class="number">{{ row.remaining }}</td><td></td></tr>{% endfor %}
+      <tr class="total-row"><th colspan="2">Total</th><td class="number">{{ platoon_summary_total.strength }}</td><td class="number">{{ platoon_summary_total.completed }}</td><td class="number">{{ platoon_summary_total.remaining }}</td><td></td></tr>
+    </tbody>
+  </table>
+</div></div>
+
+<div class="leave-board-title">Indl Lve Plan – {{ selected_company }}</div>
+<div class="card form-panel mb-4"><div class="card-body p-0 table-responsive">
+  <table class="table table-bordered leave-board individual-leave-table mb-0">
+    <thead>
+      <tr><th rowspan="2">Army No</th><th rowspan="2">Rk</th><th rowspan="2">Name</th><th rowspan="2">Pl</th><th rowspan="2">Sec</th><th colspan="3">P Lve State</th><th colspan="{{ casual_colspan }}">C Lve State</th><th colspan="3">Total Lve Availed</th><th rowspan="2"></th></tr>
+      <tr>
+        <th>Dt</th><th>No of Days</th><th>Completed</th>
+        {% for number in casual_column_numbers %}
+          <th>C Lve-{{ number }} Dt</th><th>Days</th>
+        {% endfor %}
+        <th>P Lve</th><th>C Lve</th><th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for soldier in soldiers %}<tr>
+        <td>{{ soldier.army_number }}</td><td>{{ soldier.latest_rank_name|default:soldier.rank }}</td><td>{{ soldier.name }}</td><td>{{ soldier.platoon_name }}</td><td>—</td>
+        <td>{% if soldier.p_leave %}{{ soldier.p_leave.from_date|date:"d M Y" }}{% else %}—{% endif %}</td><td>{{ soldier.p_leave_days }}</td><td>{% if soldier.p_leave %}Yes{% else %}No{% endif %}</td>
+        {% for leave in soldier.casual_columns %}
+          <td>{% if leave %}{{ leave.from_date|date:"d M Y" }}{% else %}—{% endif %}</td>
+          <td>{% if leave %}{{ leave.no_days }}{% else %}0{% endif %}</td>
+        {% endfor %}
+        <td>{{ soldier.p_leave_days }}</td><td>{{ soldier.c_leave_days }}</td><td>{{ soldier.combined_leave_days }}</td>
+        <td><a href="{% url 'training:leave_manage' soldier.pk %}" class="btn btn-bir btn-sm">{% if can_apply %}Apply{% elif can_approve %}Review{% else %}View{% endif %}</a></td>
+      </tr>{% empty %}<tr><td colspan="{{ individual_colspan }}">No soldiers found in this company.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endif %}
+{% endblock %}

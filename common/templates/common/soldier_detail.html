@@ -1,0 +1,117 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}{{ soldier.name }} · 1 BIR{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header d-flex flex-wrap align-items-start justify-content-between">
+  <div>
+    <div class="section-eyebrow"><i class="bi bi-person-vcard me-1"></i> Soldier Record</div>
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      <h1 class="mb-0">{{ soldier.name }}</h1>
+      <span class="badge bg-secondary bg-opacity-10 text-secondary fw-normal px-3 py-2">{{ soldier.rank }}</span>
+      <span class="badge" style="background: rgba(197, 162, 74, 0.15); color: #C5A24A; border: 1px solid #C5A24A;">{{ soldier.army_number }}</span>
+    </div>
+    <p class="text-secondary mb-0 mt-1">
+      <i class="bi bi-building me-1"></i>{{ soldier.organization }}
+      <span class="mx-2">·</span>{{ soldier.age|default:"—" }} years old
+      <span class="mx-2">·</span>
+      {% if soldier.service_years is not None %}{{ soldier.service_years }} year{{ soldier.service_years|pluralize }} service{% else %}Service years —{% endif %}
+    </p>
+  </div>
+  <div class="section-header-actions mt-2 mt-md-0">
+    <a href="{% url 'common:soldier_pdf' soldier.pk %}" class="btn btn-bir"><i class="bi bi-file-pdf me-1"></i>Export PDF</a>
+    <a href="{% url 'common:soldier_update' soldier.pk %}" class="btn btn-outline-secondary"><i class="bi bi-pencil me-1"></i>Edit</a>
+    <a href="{% url 'common:soldier_list' %}" class="btn btn-outline-secondary">Back</a>
+  </div>
+</div>
+
+<div class="mb-4">
+  <ul class="nav nav-tabs dossier-tabs" id="soldierTabs" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#particulars" type="button">Particulars</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#training" type="button">Training</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#service" type="button">Service History</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#education" type="button">Education</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#medical" type="button">Medical</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#performance" type="button">Performance</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#appointment" type="button">Appointments</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#contact" type="button">Contact</button></li>
+  </ul>
+</div>
+
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="particulars">
+    <div class="card form-panel"><div class="card-body p-4">
+      <div class="row g-3">
+        <div class="col-md-6"><div class="small text-secondary text-uppercase">Army Number</div><div class="fw-medium">{{ soldier.army_number }}</div></div>
+        <div class="col-md-6"><div class="small text-secondary text-uppercase">Rank</div><div class="fw-medium">{{ soldier.rank }}</div></div>
+        <div class="col-md-6"><div class="small text-secondary text-uppercase">Organization</div><div class="fw-medium">{{ soldier.organization }}</div></div>
+        <div class="col-md-6"><div class="small text-secondary text-uppercase">AL-1/13</div><div class="fw-medium">{{ soldier.get_al1_13_display|default:"—" }}</div></div>
+        <div class="col-12"><div class="small text-secondary text-uppercase">Previous Unit/Organizations</div><div>{{ soldier.previous_unit_organizations|default:"—" }}</div></div>
+        <div class="col-12"><div class="small text-secondary text-uppercase">Present Address</div><div>{{ soldier.present_address|default:"—" }}</div></div>
+        <div class="col-12"><div class="small text-secondary text-uppercase">Permanent Address</div><div>{{ soldier.permanent_address|default:"—" }}</div></div>
+      </div>
+    </div></div>
+  </div>
+  <div class="tab-pane fade" id="training">{% include "common/partials/soldier_training.html" %}</div>
+  <div class="tab-pane fade" id="service">
+    <div class="card form-panel"><div class="card-body p-4">
+      <table class="table table-ledger mb-0"><thead><tr><th>Organization</th><th>Rank</th><th>Start</th><th>End</th></tr></thead>
+      <tbody>
+        {% for item in soldier.service_histories.all %}
+          <tr><td>{{ item.organization }}</td><td>{{ item.rank }}</td><td>{{ item.start_date|date:"d M Y" }}</td><td>{{ item.end_date|date:"d M Y"|default:"—" }}</td></tr>
+        {% empty %}<tr><td colspan="4" class="text-secondary">No service history recorded.</td></tr>{% endfor %}
+      </tbody></table>
+    </div></div>
+  </div>
+  <div class="tab-pane fade" id="education">
+    <div class="card form-panel"><div class="card-body p-4">
+      <table class="table table-ledger mb-0"><thead><tr><th>Level</th><th>Institution</th><th>From</th><th>To</th></tr></thead>
+      <tbody>
+        {% for item in soldier.civil_educations.all %}
+          <tr><td>{{ item.level }}</td><td>{{ item.institution_name }}</td><td>{{ item.from_date|date:"d M Y" }}</td><td>{{ item.to_date|date:"d M Y"|default:"—" }}</td></tr>
+        {% empty %}<tr><td colspan="4" class="text-secondary">No civil education recorded.</td></tr>{% endfor %}
+      </tbody></table>
+    </div></div>
+  </div>
+  <div class="tab-pane fade" id="medical">
+    <div class="card form-panel"><div class="card-body p-4">
+      <table class="table table-ledger mb-0"><thead><tr><th>Category</th><th>From</th><th>To</th></tr></thead>
+      <tbody>
+        {% for item in soldier.medical_categories.all %}
+          <tr><td>{{ item.type }}</td><td>{{ item.from_date|date:"d M Y" }}</td><td>{{ item.to_date|date:"d M Y"|default:"—" }}</td></tr>
+        {% empty %}<tr><td colspan="3" class="text-secondary">No medical category recorded.</td></tr>{% endfor %}
+      </tbody></table>
+    </div></div>
+  </div>
+  <div class="tab-pane fade" id="performance">
+    <div class="card form-panel"><div class="card-body p-4">
+      <table class="table table-ledger mb-0"><thead><tr><th>Year</th><th>Score</th><th>Report</th></tr></thead>
+      <tbody>
+        {% for item in soldier.annual_performance_reports.all %}
+          <tr><td>{{ item.year }}</td><td>{{ item.score|default:"—" }}</td><td>{{ item.report|default:"—" }}</td></tr>
+        {% empty %}<tr><td colspan="3" class="text-secondary">No annual performance report recorded.</td></tr>{% endfor %}
+      </tbody></table>
+    </div></div>
+  </div>
+  <div class="tab-pane fade" id="appointment">
+    <div class="card form-panel"><div class="card-body p-4">
+      <table class="table table-ledger mb-0"><thead><tr><th>Appointment</th><th>Organization</th><th>Start</th><th>End</th></tr></thead>
+      <tbody>
+        {% for item in soldier.appointment_histories.all %}
+          <tr><td>{{ item.appointment_name }}</td><td>{{ item.organization }}</td><td>{{ item.start_date|date:"d M Y" }}</td><td>{{ item.end_date|date:"d M Y"|default:"—" }}</td></tr>
+        {% empty %}<tr><td colspan="4" class="text-secondary">No appointment history recorded.</td></tr>{% endfor %}
+      </tbody></table>
+    </div></div>
+  </div>
+  <div class="tab-pane fade" id="contact">
+    <div class="card form-panel"><div class="card-body p-4">
+      <table class="table table-ledger mb-0"><thead><tr><th>Type</th><th>Number</th></tr></thead>
+      <tbody>
+        {% for item in soldier.mobile_numbers.all %}
+          <tr><td>{{ item.get_type_of_number_display }}</td><td><code>{{ item.mobile_number }}</code></td></tr>
+        {% empty %}<tr><td colspan="2" class="text-secondary">No mobile number recorded.</td></tr>{% endfor %}
+      </tbody></table>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

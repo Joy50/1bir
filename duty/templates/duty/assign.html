@@ -1,0 +1,147 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}Assign Duty · 1 BIR{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header">
+  <div class="section-eyebrow">Duty</div>
+  <h1>Assign duty</h1>
+  <p class="text-secondary mb-0">
+    Soldiers are suggested in tour order. A soldier is not detailed again until every available man has finished this tour.
+    The CO cannot report the tour while anyone is still due or still on post.
+  </p>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Tour</div><div class="stat-value">{% if progress.tour %}{{ progress.tour.number }}{% else %}—{% endif %}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Still due</div><div class="stat-value">{{ progress.still_due|length }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">On duty</div><div class="stat-value">{{ progress.on_duty|length }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Finished</div><div class="stat-value">{{ progress.finished|length }}</div></div></div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card form-panel">
+      <div class="card-body p-4">
+        <div class="form-eyebrow mb-3">Detail a soldier</div>
+        {% if can_assign_now %}
+          <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label" for="soldierSearch">Search soldier</label>
+              <input type="search" class="form-control mb-2" id="soldierSearch" placeholder="Type name or army number" autocomplete="off">
+              <div class="form-text mb-2" id="soldierSearchHelp">Only soldiers who are not currently on duty are listed.</div>
+              <label class="form-label" for="{{ form.soldier.id_for_label }}">Select soldier</label>
+              {{ form.soldier }}
+              {{ form.soldier.errors }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.post.id_for_label }}">Duty post</label>
+              {{ form.post }}
+              {{ form.post.errors }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.shift.id_for_label }}">Shift</label>
+              {{ form.shift }}
+              {{ form.shift.errors }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.remarks.id_for_label }}">Remarks</label>
+              {{ form.remarks }}
+            </div>
+            <button class="btn btn-bir" type="submit">Assign</button>
+          </form>
+        {% else %}
+          <p class="text-secondary mb-0">
+            {% if progress.still_due %}
+              Every active post is occupied. Complete a duty before assigning the next soldier.
+            {% else %}
+              No soldiers are waiting in this tour. Either everyone has been detailed, or a tour has not started.
+            {% endif %}
+          </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card form-panel mb-4">
+      <div class="card-body p-4">
+        <div class="form-eyebrow mb-3">Suggested next</div>
+        <table class="table table-ledger mb-0">
+          <thead><tr><th>Army No</th><th>Name</th><th>Unit</th><th>Last completed</th></tr></thead>
+          <tbody>
+            {% for item in suggestions %}
+              <tr>
+                <td>{{ item.soldier.army_number }}</td>
+                <td>{{ item.soldier.name }}</td>
+                <td>{{ item.soldier.organization }}</td>
+                <td>{{ item.last_completed|date:"d M Y H:i"|default:"Never" }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4" class="text-secondary">Everyone available has been detailed in this tour.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card form-panel">
+      <div class="card-body p-4">
+        <div class="form-eyebrow mb-3">On duty now</div>
+        <table class="table table-ledger mb-0">
+          <thead><tr><th>Soldier</th><th>Post</th><th>Shift</th><th></th></tr></thead>
+          <tbody>
+            {% for row in progress.on_duty %}
+              <tr>
+                <td>{{ row.soldier.army_number }} {{ row.soldier.name }}</td>
+                <td>{{ row.post }}</td>
+                <td>{{ row.get_shift_display }}</td>
+                <td class="text-end">
+                  <form method="post" action="{% url 'duty:complete' row.pk %}">
+                    {% csrf_token %}
+                    <button class="btn btn-outline-secondary btn-sm" type="submit">Mark finished</button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4" class="text-secondary">No one is on a post right now.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const search = document.getElementById("soldierSearch");
+    const select = document.querySelector("[data-searchable-soldier]");
+    if (!search || !select) return;
+
+    const options = Array.from(select.options).map(function (option) {
+      return { value: option.value, text: option.text, disabled: option.disabled };
+    });
+
+    function filterSoldiers() {
+      const query = search.value.trim().toLocaleLowerCase();
+      const selected = select.value;
+      select.replaceChildren();
+      options.forEach(function (item, index) {
+        if (index !== 0 && query && !item.text.toLocaleLowerCase().includes(query)) return;
+        const option = new Option(item.text, item.value, false, item.value === selected);
+        option.disabled = item.disabled;
+        select.add(option);
+      });
+      if (select.options.length === 1 && query) {
+        const empty = new Option("No matching available soldier", "", false, false);
+        empty.disabled = true;
+        select.add(empty);
+      }
+    }
+
+    search.addEventListener("input", filterSoldiers);
+  }());
+</script>
+{% endblock %}

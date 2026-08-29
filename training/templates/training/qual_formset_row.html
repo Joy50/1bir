@@ -1,0 +1,31 @@
+<div class="inline-form{% if form.DELETE.value %} is-deleted{% endif %}">
+  {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+  {% if form.non_field_errors %}
+    <div class="text-danger small mb-2">{{ form.non_field_errors }}</div>
+  {% endif %}
+  <div class="row g-3 align-items-end">
+    <div class="col-md-6 col-xl-3">
+      <label class="form-label" for="{{ form.course_level.id_for_label }}">Course level</label>
+      {{ form.course_level }}
+      {% if form.course_level.errors %}<div class="text-danger small">{{ form.course_level.errors }}</div>{% endif %}
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <label class="form-label" for="{{ form.course_name.id_for_label }}">Course name</label>
+      {{ form.course_name }}
+      {% if form.course_name.errors %}<div class="text-danger small">{{ form.course_name.errors }}</div>{% endif %}
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <label class="form-label" for="{{ form.result.id_for_label }}">Result</label>
+      {{ form.result }}
+      {% if form.result.errors %}<div class="text-danger small">{{ form.result.errors }}</div>{% endif %}
+    </div>
+    <div class="col-md-6 col-xl-2 d-flex justify-content-end pb-1">
+      {% if form.DELETE %}
+        <span class="d-none">{{ form.DELETE }}</span>
+      {% endif %}
+      <button type="button" class="btn btn-remove-inline" data-remove-form>
+        Remove
+      </button>
+    </div>
+  </div>
+</div>

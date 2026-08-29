@@ -1,0 +1,18 @@
+<div class="dossier-panel card form-panel">
+  <div class="card-body p-4">
+    <div class="form-eyebrow mb-3">{{ title }}</div>
+    {% if rows %}
+      <div class="table-responsive">
+        <table class="table table-ledger mb-0">
+          <tbody>
+            {% for item in rows %}
+              <tr><td>{{ item }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-secondary mb-0">{{ empty }}</p>
+    {% endif %}
+  </div>
+</div>

@@ -1,0 +1,37 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}Daily Parade State · 1 BIR{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header d-flex flex-wrap justify-content-between align-items-end gap-3">
+  <div>
+    <div class="section-eyebrow">A Matter</div>
+    <h1>Daily parade state</h1>
+    <p class="text-secondary mb-0">Battalion strength and details of absentees.</p>
+  </div>
+  <a href="{% url 'duty:parade_state_create' %}" class="btn btn-bir">New parade state</a>
+</div>
+
+<div class="card form-panel">
+  <div class="card-body p-4 table-responsive">
+    <table class="table table-ledger align-middle mb-0">
+      <thead><tr><th>Date</th><th>Authorized</th><th>Posted</th><th>Absent</th><th>Present</th><th>Prepared by</th><th></th></tr></thead>
+      <tbody>
+        {% for state in parade_states %}
+          <tr>
+            <td class="fw-semibold">{{ state.report_date|date:"d M Y" }}</td>
+            <td>{{ state.authorized_total }}</td>
+            <td>{{ state.posted_total }}</td>
+            <td>{{ state.absent_total }}</td>
+            <td>{{ state.present_total }}</td>
+            <td>{{ state.created_by.name|default:state.created_by }}</td>
+            <td class="text-end"><a class="btn btn-outline-secondary btn-sm" href="{% url 'duty:parade_state_edit' state.pk %}">Open</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="text-secondary">No parade states have been recorded.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

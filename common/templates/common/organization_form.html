@@ -1,0 +1,121 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}{{ page_title }} · 1 BIR{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header">
+  <div class="section-eyebrow">Misc · Master data</div>
+  <h1>{{ page_title }}</h1>
+  <p class="text-secondary mb-0">Organization type follows Unit → Battalion → Company → Platoon → Section.</p>
+</div>
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card form-panel">
+      <div class="card-body p-4">
+        <form method="post" novalidate id="organization-form">
+          {% csrf_token %}
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+          {% endif %}
+          {% for field in form %}
+            <div class="mb-3" {% if field.name == "parent_organization" %}id="parent-organization-wrap"{% endif %}>
+              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+              {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+            </div>
+          {% endfor %}
+          <button type="submit" class="btn btn-bir">Save</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card form-panel">
+      <div class="card-body p-4">
+        <div class="form-eyebrow mb-3">Existing</div>
+        <div class="table-responsive">
+          <table class="table table-ledger mb-0">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Parent</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in existing_items %}
+                <tr>
+                  <td>{{ item.organization_name }}</td>
+                  <td>{{ item.get_unit_kind_display }}</td>
+                  <td>{{ item.parent_organization|default:"—" }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="3" class="text-secondary">None yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{{ org_kind_map|json_script:"org-kind-map" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const kindField = document.getElementById("id_unit_kind");
+    const parentField = document.getElementById("id_parent_organization");
+    const parentWrap = document.getElementById("parent-organization-wrap");
+    if (!kindField || !parentField) {
+      return;
+    }
+    const kindMap = JSON.parse(document.getElementById("org-kind-map").textContent || "{}");
+    const parentKinds = {
+      unit: [],
+      battalion: ["unit"],
+      company: ["battalion"],
+      platoon: ["company"],
+      section: ["platoon"],
+    };
+    const originalOptions = Array.from(parentField.options).map(function (option) {
+      return { value: option.value, text: option.text };
+    });
+
+    function syncParents() {
+      const kind = kindField.value;
+      const allowed = parentKinds[kind] || [];
+      const current = parentField.value;
+      const keepBlank = kind === "unit" || kind === "battalion";
+      parentField.innerHTML = "";
+      originalOptions.forEach(function (option) {
+        if (!option.value) {
+          if (keepBlank) {
+            parentField.appendChild(new Option(option.text, option.value));
+          }
+          return;
+        }
+        if (allowed.indexOf(kindMap[option.value] || "") !== -1) {
+          parentField.appendChild(new Option(option.text, option.value));
+        }
+      });
+      if (keepBlank && !parentField.querySelector('option[value=""]')) {
+        parentField.insertBefore(new Option("---------", ""), parentField.firstChild);
+      }
+      if (Array.from(parentField.options).some(function (option) { return option.value === current; })) {
+        parentField.value = current;
+      } else {
+        parentField.value = "";
+      }
+      if (parentWrap) {
+        parentWrap.style.display = kind === "unit" ? "none" : "";
+      }
+    }
+
+    kindField.addEventListener("change", syncParents);
+    syncParents();
+  })();
+</script>
+{% endblock %}

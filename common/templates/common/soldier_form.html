@@ -1,0 +1,455 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}{% if object %}Edit {{ object.name }}{% else %}Enlist Soldier{% endif %} · 1 BIR{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header">
+  <div class="section-eyebrow">Soldier</div>
+  <h1>{% if object %}Edit {{ object.name }}{% else %}Enlist Soldier{% endif %}</h1>
+</div>
+<div class="card form-panel">
+  <div class="card-body p-4">
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      {% for group_title, field_names in field_groups %}
+      <fieldset class="mb-4">
+        <legend class="h6 border-bottom pb-2 mb-3">{{ group_title }}</legend>
+        <div class="row g-3">
+        {% for field in field_names %}
+          <div class="{% if field.field.widget.input_type == 'textarea' %}col-12{% else %}col-md-6{% endif %}">
+            {% if field.field.widget.input_type == "checkbox" %}
+              <div class="form-check mt-4">
+                {{ field }}
+                <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              </div>
+            {% else %}
+              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+            {% endif %}
+            {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+          </div>
+        {% endfor %}
+        </div>
+        {% if group_title == "Appointment & promotion" %}
+        <div class="d-flex align-items-center justify-content-between border-top pt-3 mt-3 mb-3">
+          <div class="form-label mb-0">Appointment History</div>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="add-appointment">Add more</button>
+        </div>
+        {{ appointment_formset.management_form }}
+        {% if appointment_formset.non_form_errors %}<div class="alert alert-danger">{{ appointment_formset.non_form_errors }}</div>{% endif %}
+        <div id="appointment-forms">
+          {% for appointment_form in appointment_formset %}
+            <div class="appointment-form border rounded p-3 mb-3{% if appointment_form.DELETE.value %} d-none{% endif %}">
+              {% for hidden in appointment_form.hidden_fields %}{{ hidden }}{% endfor %}
+              <div class="row g-3">
+                {% for field in appointment_form.visible_fields %}
+                  {% if field.name != 'DELETE' %}
+                    <div class="col-md-6"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}</div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+              <div class="d-none">{{ appointment_form.DELETE }}</div>
+              <button type="button" class="btn btn-sm btn-outline-danger mt-3 remove-appointment">Remove</button>
+            </div>
+          {% endfor %}
+        </div>
+        <template id="empty-appointment-form">
+          <div class="appointment-form border rounded p-3 mb-3">
+            {% with appointment_form=appointment_formset.empty_form %}
+              {% for hidden in appointment_form.hidden_fields %}{{ hidden }}{% endfor %}
+              <div class="row g-3">
+                {% for field in appointment_form.visible_fields %}
+                  {% if field.name != 'DELETE' %}<div class="col-md-6"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>{% endif %}
+                {% endfor %}
+              </div>
+              <div class="d-none">{{ appointment_form.DELETE }}</div>
+            {% endwith %}
+            <button type="button" class="btn btn-sm btn-outline-danger mt-3 remove-appointment">Remove</button>
+          </div>
+        </template>
+        {% endif %}
+        {% if group_title == "Medical" %}
+        <div class="d-flex align-items-center justify-content-between border-top pt-3 mt-3 mb-3">
+          <div class="form-label mb-0">Medical Categories</div>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="add-medical">Add more</button>
+        </div>
+        {{ medical_formset.management_form }}
+        {% if medical_formset.non_form_errors %}<div class="alert alert-danger">{{ medical_formset.non_form_errors }}</div>{% endif %}
+        <div id="medical-forms">
+          {% for medical_form in medical_formset %}
+            <div class="medical-form border rounded p-3 mb-3{% if medical_form.DELETE.value %} d-none{% endif %}">
+              {% for hidden in medical_form.hidden_fields %}{{ hidden }}{% endfor %}
+              <div class="row g-3">
+                {% for field in medical_form.visible_fields %}
+                  {% if field.name != 'DELETE' %}<div class="col-md-4"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}</div>{% endif %}
+                {% endfor %}
+              </div>
+              <div class="d-none">{{ medical_form.DELETE }}</div>
+              <button type="button" class="btn btn-sm btn-outline-danger mt-3 remove-medical">Remove</button>
+            </div>
+          {% endfor %}
+        </div>
+        <template id="empty-medical-form">
+          <div class="medical-form border rounded p-3 mb-3">
+            {% with medical_form=medical_formset.empty_form %}
+              {% for hidden in medical_form.hidden_fields %}{{ hidden }}{% endfor %}
+              <div class="row g-3">
+                {% for field in medical_form.visible_fields %}
+                  {% if field.name != 'DELETE' %}<div class="col-md-4"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>{% endif %}
+                {% endfor %}
+              </div>
+              <div class="d-none">{{ medical_form.DELETE }}</div>
+            {% endwith %}
+            <button type="button" class="btn btn-sm btn-outline-danger mt-3 remove-medical">Remove</button>
+          </div>
+        </template>
+        {% endif %}
+      </fieldset>
+      {% endfor %}
+      <fieldset class="mb-4">
+        <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
+          <legend class="h6 mb-0">Rank History</legend>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="add-rank-history">Add more</button>
+        </div>
+        {{ rank_history_formset.management_form }}
+        {% if rank_history_formset.non_form_errors %}<div class="alert alert-danger">{{ rank_history_formset.non_form_errors }}</div>{% endif %}
+        <div id="rank-history-forms">
+          {% for history_form in rank_history_formset %}
+            <div class="rank-history-form border rounded p-3 mb-3{% if history_form.DELETE.value %} d-none{% endif %}">
+              {% for hidden in history_form.hidden_fields %}{{ hidden }}{% endfor %}
+              <div class="row g-3">
+                {% for field in history_form.visible_fields %}
+                  {% if field.name != 'DELETE' %}<div class="col-md-6"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}</div>{% endif %}
+                {% endfor %}
+              </div>
+              <div class="d-none">{{ history_form.DELETE }}</div>
+              <button type="button" class="btn btn-sm btn-outline-danger mt-3 remove-rank-history">Remove</button>
+            </div>
+          {% endfor %}
+        </div>
+        <template id="empty-rank-history-form">
+          <div class="rank-history-form border rounded p-3 mb-3">
+            {% with history_form=rank_history_formset.empty_form %}
+              {% for hidden in history_form.hidden_fields %}{{ hidden }}{% endfor %}
+              <div class="row g-3">
+                {% for field in history_form.visible_fields %}
+                  {% if field.name != 'DELETE' %}<div class="col-md-6"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>{% endif %}
+                {% endfor %}
+              </div>
+              <div class="d-none">{{ history_form.DELETE }}</div>
+            {% endwith %}
+            <button type="button" class="btn btn-sm btn-outline-danger mt-3 remove-rank-history">Remove</button>
+          </div>
+        </template>
+      </fieldset>
+      <fieldset class="mb-4">
+        <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
+          <legend class="h6 mb-0">Civil Education</legend>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="add-education">Add more</button>
+        </div>
+        {{ education_formset.management_form }}
+        {% if education_formset.non_form_errors %}<div class="alert alert-danger">{{ education_formset.non_form_errors }}</div>{% endif %}
+        <div id="education-forms">
+          {% for education_form in education_formset %}
+            <div class="education-form border rounded p-3 mb-3{% if education_form.DELETE.value %} d-none{% endif %}">
+              {% for hidden in education_form.hidden_fields %}{{ hidden }}{% endfor %}
+              <div class="row g-3">
+                {% for field in education_form.visible_fields %}
+                  {% if field.name != 'DELETE' %}<div class="col-md-4"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}</div>{% endif %}
+                {% endfor %}
+              </div>
+              <div class="d-none">{{ education_form.DELETE }}</div>
+              <button type="button" class="btn btn-sm btn-outline-danger mt-3 remove-education">Remove</button>
+            </div>
+          {% endfor %}
+        </div>
+        <template id="empty-education-form">
+          <div class="education-form border rounded p-3 mb-3">
+            {% with education_form=education_formset.empty_form %}
+              {% for hidden in education_form.hidden_fields %}{{ hidden }}{% endfor %}
+              <div class="row g-3">
+                {% for field in education_form.visible_fields %}
+                  {% if field.name != 'DELETE' %}<div class="col-md-4"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>{% endif %}
+                {% endfor %}
+              </div>
+              <div class="d-none">{{ education_form.DELETE }}</div>
+            {% endwith %}
+            <button type="button" class="btn btn-sm btn-outline-danger mt-3 remove-education">Remove</button>
+          </div>
+        </template>
+      </fieldset>
+      <fieldset class="mb-4">
+        <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
+          <legend class="h6 mb-0">Family</legend>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="add-family">Add more</button>
+        </div>
+        {{ family_formset.management_form }}
+        {% if family_formset.non_form_errors %}<div class="alert alert-danger">{{ family_formset.non_form_errors }}</div>{% endif %}
+        <div id="family-forms">
+          {% for family_form in family_formset %}
+            <div class="family-form border rounded p-3 mb-3{% if family_form.DELETE.value %} d-none{% endif %}">
+              {% for hidden in family_form.hidden_fields %}{{ hidden }}{% endfor %}
+              <div class="row g-3">
+                {% for field in family_form.visible_fields %}
+                  {% if field.name != 'DELETE' %}<div class="{% if field.field.widget.input_type == 'textarea' %}col-12{% else %}col-md-6{% endif %}"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}</div>{% endif %}
+                {% endfor %}
+              </div>
+              <div class="d-none">{{ family_form.DELETE }}</div>
+              <button type="button" class="btn btn-sm btn-outline-danger mt-3 remove-family">Remove</button>
+            </div>
+          {% endfor %}
+        </div>
+        <template id="empty-family-form">
+          <div class="family-form border rounded p-3 mb-3">
+            {% with family_form=family_formset.empty_form %}
+              {% for hidden in family_form.hidden_fields %}{{ hidden }}{% endfor %}
+              <div class="row g-3">
+                {% for field in family_form.visible_fields %}
+                  {% if field.name != 'DELETE' %}<div class="{% if field.field.widget.input_type == 'textarea' %}col-12{% else %}col-md-6{% endif %}"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>{% endif %}
+                {% endfor %}
+              </div>
+              <div class="d-none">{{ family_form.DELETE }}</div>
+            {% endwith %}
+            <button type="button" class="btn btn-sm btn-outline-danger mt-3 remove-family">Remove</button>
+          </div>
+        </template>
+      </fieldset>
+      <fieldset class="mb-4">
+        <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
+          <legend class="h6 mb-0">Mobile Numbers</legend>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="add-mobile">Add more</button>
+        </div>
+        {{ mobile_formset.management_form }}
+        {% if mobile_formset.non_form_errors %}<div class="alert alert-danger">{{ mobile_formset.non_form_errors }}</div>{% endif %}
+        <div id="mobile-forms">
+          {% for mobile_form in mobile_formset %}
+            <div class="mobile-form border rounded p-3 mb-3{% if mobile_form.DELETE.value %} d-none{% endif %}">
+              {% for hidden in mobile_form.hidden_fields %}{{ hidden }}{% endfor %}
+              <div class="row g-3">
+                {% for field in mobile_form.visible_fields %}
+                  {% if field.name != 'DELETE' %}<div class="col-md-6"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}</div>{% endif %}
+                {% endfor %}
+              </div>
+              <div class="d-none">{{ mobile_form.DELETE }}</div>
+              <button type="button" class="btn btn-sm btn-outline-danger mt-3 remove-mobile">Remove</button>
+            </div>
+          {% endfor %}
+        </div>
+        <template id="empty-mobile-form">
+          <div class="mobile-form border rounded p-3 mb-3">
+            {% with mobile_form=mobile_formset.empty_form %}
+              {% for hidden in mobile_form.hidden_fields %}{{ hidden }}{% endfor %}
+              <div class="row g-3">
+                {% for field in mobile_form.visible_fields %}
+                  {% if field.name != 'DELETE' %}<div class="col-md-6"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>{% endif %}
+                {% endfor %}
+              </div>
+              <div class="d-none">{{ mobile_form.DELETE }}</div>
+            {% endwith %}
+            <button type="button" class="btn btn-sm btn-outline-danger mt-3 remove-mobile">Remove</button>
+          </div>
+        </template>
+      </fieldset>
+      <fieldset class="mb-4">
+        <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
+          <legend class="h6 mb-0">Annual Performance Reports</legend>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="add-apr">Add more</button>
+        </div>
+        {{ apr_formset.management_form }}
+        {% if apr_formset.non_form_errors %}<div class="alert alert-danger">{{ apr_formset.non_form_errors }}</div>{% endif %}
+        <div id="apr-forms">
+          {% for apr_form in apr_formset %}
+            <div class="apr-form border rounded p-3 mb-3{% if apr_form.DELETE.value %} d-none{% endif %}">
+              {% for hidden in apr_form.hidden_fields %}{{ hidden }}{% endfor %}
+              <div class="row g-3">
+                {% for field in apr_form.visible_fields %}
+                  {% if field.name != 'DELETE' %}
+                    <div class="{% if field.field.widget.input_type == 'textarea' %}col-12{% else %}col-md-6{% endif %}"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}</div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+              <div class="d-none">{{ apr_form.DELETE }}</div>
+              <button type="button" class="btn btn-sm btn-outline-danger mt-3 remove-apr">Remove</button>
+            </div>
+          {% endfor %}
+        </div>
+        <template id="empty-apr-form">
+          <div class="apr-form border rounded p-3 mb-3">
+            {% with apr_form=apr_formset.empty_form %}
+              {% for hidden in apr_form.hidden_fields %}{{ hidden }}{% endfor %}
+              <div class="row g-3">
+                {% for field in apr_form.visible_fields %}
+                  {% if field.name != 'DELETE' %}<div class="{% if field.field.widget.input_type == 'textarea' %}col-12{% else %}col-md-6{% endif %}"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>{% endif %}
+                {% endfor %}
+              </div>
+              <div class="d-none">{{ apr_form.DELETE }}</div>
+            {% endwith %}
+            <button type="button" class="btn btn-sm btn-outline-danger mt-3 remove-apr">Remove</button>
+          </div>
+        </template>
+      </fieldset>
+      <fieldset class="mb-4">
+        <legend class="h6 border-bottom pb-2 mb-3">Military Education &amp; Training</legend>
+        <p class="text-secondary small">Enter initial training records here. Course-name/result rows can be completed in the dedicated Qualification editor after saving the soldier.</p>
+        {% for training_title, training_formset in training_formsets %}
+          <details class="border rounded p-3 mb-3 training-formset" data-training-prefix="{{ training_formset.prefix }}">
+            <summary class="fw-semibold">{{ training_title }}</summary>
+            <div class="d-flex justify-content-end my-3"><button type="button" class="btn btn-sm btn-outline-secondary add-training-row">Add more</button></div>
+            {{ training_formset.management_form }}
+            {% if training_formset.non_form_errors %}<div class="alert alert-danger">{{ training_formset.non_form_errors }}</div>{% endif %}
+            <div class="training-rows">
+              {% for training_form in training_formset %}
+                <div class="training-row border rounded p-3 mb-3{% if training_form.DELETE.value %} d-none{% endif %}">
+                  {% for hidden in training_form.hidden_fields %}{{ hidden }}{% endfor %}
+                  <div class="row g-3">{% for field in training_form.visible_fields %}{% if field.name != 'DELETE' %}<div class="{% if field.field.widget.input_type == 'textarea' %}col-12{% else %}col-md-4{% endif %}"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}</div>{% endif %}{% endfor %}</div>
+                  <div class="d-none">{{ training_form.DELETE }}</div><button type="button" class="btn btn-sm btn-outline-danger mt-3 remove-training-row">Remove</button>
+                </div>
+              {% endfor %}
+            </div>
+            <template class="empty-training-row"><div class="training-row border rounded p-3 mb-3">{% with training_form=training_formset.empty_form %}{% for hidden in training_form.hidden_fields %}{{ hidden }}{% endfor %}<div class="row g-3">{% for field in training_form.visible_fields %}{% if field.name != 'DELETE' %}<div class="{% if field.field.widget.input_type == 'textarea' %}col-12{% else %}col-md-4{% endif %}"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>{% endif %}{% endfor %}</div><div class="d-none">{{ training_form.DELETE }}</div>{% endwith %}<button type="button" class="btn btn-sm btn-outline-danger mt-3 remove-training-row">Remove</button></div></template>
+          </details>
+        {% endfor %}
+      </fieldset>
+      <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-bir">Save</button>
+        <a href="{% url 'common:soldier_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+(() => {
+  const container = document.getElementById("appointment-forms");
+  const total = document.getElementById("id_appointment_histories-TOTAL_FORMS");
+  const template = document.getElementById("empty-appointment-form");
+  document.getElementById("add-appointment").addEventListener("click", () => {
+    const index = Number(total.value);
+    container.insertAdjacentHTML("beforeend", template.innerHTML.replaceAll("__prefix__", index));
+    total.value = index + 1;
+  });
+  container.addEventListener("click", event => {
+    if (!event.target.classList.contains("remove-appointment")) return;
+    const row = event.target.closest(".appointment-form");
+    const deleteBox = row.querySelector('input[name$="-DELETE"]');
+    if (deleteBox) deleteBox.checked = true;
+    row.classList.add("d-none");
+  });
+
+  const aprContainer = document.getElementById("apr-forms");
+  const aprTotal = document.getElementById("id_annual_performance_reports-TOTAL_FORMS");
+  const aprTemplate = document.getElementById("empty-apr-form");
+  document.getElementById("add-apr").addEventListener("click", () => {
+    const index = Number(aprTotal.value);
+    aprContainer.insertAdjacentHTML("beforeend", aprTemplate.innerHTML.replaceAll("__prefix__", index));
+    aprTotal.value = index + 1;
+  });
+  aprContainer.addEventListener("click", event => {
+    if (!event.target.classList.contains("remove-apr")) return;
+    const row = event.target.closest(".apr-form");
+    const deleteBox = row.querySelector('input[name$="-DELETE"]');
+    if (deleteBox) deleteBox.checked = true;
+    row.classList.add("d-none");
+  });
+
+  const mobileContainer = document.getElementById("mobile-forms");
+  const mobileTotal = document.getElementById("id_mobile_numbers-TOTAL_FORMS");
+  const mobileTemplate = document.getElementById("empty-mobile-form");
+  document.getElementById("add-mobile").addEventListener("click", () => {
+    const index = Number(mobileTotal.value);
+    mobileContainer.insertAdjacentHTML("beforeend", mobileTemplate.innerHTML.replaceAll("__prefix__", index));
+    mobileTotal.value = index + 1;
+  });
+  mobileContainer.addEventListener("click", event => {
+    if (!event.target.classList.contains("remove-mobile")) return;
+    const row = event.target.closest(".mobile-form");
+    const deleteBox = row.querySelector('input[name$="-DELETE"]');
+    if (deleteBox) deleteBox.checked = true;
+    row.classList.add("d-none");
+  });
+
+  const familyContainer = document.getElementById("family-forms");
+  const familyTotal = document.getElementById("id_family_members-TOTAL_FORMS");
+  const familyTemplate = document.getElementById("empty-family-form");
+  document.getElementById("add-family").addEventListener("click", () => {
+    const index = Number(familyTotal.value);
+    familyContainer.insertAdjacentHTML("beforeend", familyTemplate.innerHTML.replaceAll("__prefix__", index));
+    familyTotal.value = index + 1;
+  });
+  familyContainer.addEventListener("click", event => {
+    if (!event.target.classList.contains("remove-family")) return;
+    const row = event.target.closest(".family-form");
+    const deleteBox = row.querySelector('input[name$="-DELETE"]');
+    if (deleteBox) deleteBox.checked = true;
+    row.classList.add("d-none");
+  });
+
+  const medicalContainer = document.getElementById("medical-forms");
+  const medicalTotal = document.getElementById("id_medical_categories-TOTAL_FORMS");
+  const medicalTemplate = document.getElementById("empty-medical-form");
+  document.getElementById("add-medical").addEventListener("click", () => {
+    const index = Number(medicalTotal.value);
+    medicalContainer.insertAdjacentHTML("beforeend", medicalTemplate.innerHTML.replaceAll("__prefix__", index));
+    medicalTotal.value = index + 1;
+  });
+  medicalContainer.addEventListener("click", event => {
+    if (!event.target.classList.contains("remove-medical")) return;
+    const row = event.target.closest(".medical-form");
+    const deleteBox = row.querySelector('input[name$="-DELETE"]');
+    if (deleteBox) deleteBox.checked = true;
+    row.classList.add("d-none");
+  });
+
+  const educationContainer = document.getElementById("education-forms");
+  const educationTotal = document.getElementById("id_civil_educations-TOTAL_FORMS");
+  const educationTemplate = document.getElementById("empty-education-form");
+  document.getElementById("add-education").addEventListener("click", () => {
+    const index = Number(educationTotal.value);
+    educationContainer.insertAdjacentHTML("beforeend", educationTemplate.innerHTML.replaceAll("__prefix__", index));
+    educationTotal.value = index + 1;
+  });
+  educationContainer.addEventListener("click", event => {
+    if (!event.target.classList.contains("remove-education")) return;
+    const row = event.target.closest(".education-form");
+    const deleteBox = row.querySelector('input[name$="-DELETE"]');
+    if (deleteBox) deleteBox.checked = true;
+    row.classList.add("d-none");
+  });
+
+  const rankHistoryContainer = document.getElementById("rank-history-forms");
+  const rankHistoryTotal = document.getElementById("id_rank_histories-TOTAL_FORMS");
+  const rankHistoryTemplate = document.getElementById("empty-rank-history-form");
+  document.getElementById("add-rank-history").addEventListener("click", () => {
+    const index = Number(rankHistoryTotal.value);
+    rankHistoryContainer.insertAdjacentHTML("beforeend", rankHistoryTemplate.innerHTML.replaceAll("__prefix__", index));
+    rankHistoryTotal.value = index + 1;
+  });
+  rankHistoryContainer.addEventListener("click", event => {
+    if (!event.target.classList.contains("remove-rank-history")) return;
+    const row = event.target.closest(".rank-history-form");
+    const deleteBox = row.querySelector('input[name$="-DELETE"]');
+    if (deleteBox) deleteBox.checked = true;
+    row.classList.add("d-none");
+  });
+
+  document.querySelectorAll(".training-formset").forEach(section => {
+    const prefix = section.dataset.trainingPrefix;
+    const total = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+    const rows = section.querySelector(".training-rows");
+    const template = section.querySelector(".empty-training-row");
+    section.querySelector(".add-training-row").addEventListener("click", () => {
+      const index = Number(total.value);
+      rows.insertAdjacentHTML("beforeend", template.innerHTML.replaceAll("__prefix__", index));
+      total.value = index + 1;
+      section.open = true;
+    });
+    rows.addEventListener("click", event => {
+      if (!event.target.classList.contains("remove-training-row")) return;
+      const row = event.target.closest(".training-row");
+      const deleteBox = row.querySelector('input[name$="-DELETE"]');
+      if (deleteBox) deleteBox.checked = true;
+      row.classList.add("d-none");
+    });
+  });
+})();
+</script>
+{% endblock %}

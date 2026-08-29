@@ -1,0 +1,287 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}Major Commitment · 1 BIR{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header">
+  <div class="section-eyebrow">Training // Major Commitment</div>
+  <h1>Participation in Major Commitment</h1>
+  <p class="text-secondary mb-0">
+    Soldier particulars and major commitment records for {{ selected_year }}.
+  </p>
+</div>
+
+{% if not has_company and not request.user.is_admin %}
+  <div class="alert alert-danger">
+    Your account is not assigned to a company. Ask an admin to assign an organization before viewing this return.
+  </div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-label">Unit Strength</div>
+      <div class="stat-value">{{ stats.total }}</div>
+      <div class="stat-note">Soldiers on this return</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-label">Recorded</div>
+      <div class="stat-value">{{ stats.recorded }}</div>
+      <div class="stat-note">At least one entry in {{ stats.year }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-label">Not Recorded</div>
+      <div class="stat-value">{{ stats.unrecorded }}</div>
+      <div class="stat-note">No major commitment entered</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-label">Complete Record</div>
+      <div class="stat-value">{{ stats.complete }}</div>
+      <div class="stat-note">All six fields filled</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card form-panel h-100">
+      <div class="card-body p-4">
+        <div class="form-eyebrow mb-3">Record Coverage</div>
+        {% if stats.total %}
+          <div class="chart-canvas-wrap">
+            <canvas id="majcomCoverageChart"></canvas>
+          </div>
+        {% else %}
+          <p class="text-secondary mb-0">No soldiers on strength to chart.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card form-panel h-100">
+      <div class="card-body p-4">
+        <div class="form-eyebrow mb-3">Commitment Mix</div>
+        <div class="chart-canvas-wrap">
+          <canvas id="majcomFieldChart"></canvas>
+        </div>
+        <div class="table-responsive mt-3">
+          <table class="table table-ledger mb-0">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th class="text-end">Soldiers</th>
+                <th class="text-end">Share</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in stats.by_field %}
+                <tr>
+                  <td>{{ row.label }}</td>
+                  <td class="text-end">{{ row.total }}</td>
+                  <td class="text-end">{{ row.percent }}%</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ stats.charts|json_script:"majcom-charts" }}
+
+<div class="card form-panel mb-4">
+  <div class="card-body p-4">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label" for="id_year">Year</label>
+        <select class="form-select" id="id_year" name="year">
+          {% for year in year_choices %}
+            <option value="{{ year }}" {% if selected_year == year %}selected{% endif %}>{{ year }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="id_search">Search</label>
+        <input type="text" class="form-control" id="id_search" name="q"
+               value="{{ search_query }}" placeholder="Name or army number">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="id_organization">Company / Organization</label>
+        <select class="form-select" id="id_organization" name="organization">
+          <option value="">All my companies</option>
+          {% for organization in organizations %}
+            <option value="{{ organization.pk }}" {% if organization_filter == organization.pk|stringformat:"s" %}selected{% endif %}>
+              {{ organization.organization_name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-bir w-100">Filter</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card form-panel">
+  <div class="card-body p-4">
+    <div class="d-flex justify-content-between align-items-baseline mb-3">
+      <div class="form-eyebrow mb-0">Nominal Roll // {{ selected_year }}</div>
+      {% if paginator.count %}
+        <span class="small text-secondary">
+          Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ paginator.count }}
+        </span>
+      {% endif %}
+    </div>
+    <div class="table-responsive">
+      <table class="table table-ledger mb-0">
+        <thead>
+          <tr>
+            <th>Army No</th>
+            <th>Latest Rank</th>
+            <th>Name</th>
+            <th>Company</th>
+            <th>DOB</th>
+            <th>DOE</th>
+            <th>Present Age</th>
+            <th>Service Age</th>
+            {% for field_name, label in majcom_fields %}
+              <th>{{ label }}</th>
+            {% endfor %}
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for soldier in soldiers %}
+            <tr>
+              <td>{{ soldier.army_number }}</td>
+              <td>{{ soldier.latest_rank_name|default:soldier.rank }}</td>
+              <td>{{ soldier.name }}</td>
+              <td>{{ soldier.organization }}</td>
+              <td>{{ soldier.dob|date:"d M Y" }}</td>
+              <td>{{ soldier.doe|date:"d M Y" }}</td>
+              <td>{{ soldier.age|default:"—" }}</td>
+              <td>{{ soldier.service_years|default:"—" }}</td>
+              {% for cell in soldier.majcom_values %}
+                <td>{{ cell.value }}</td>
+              {% endfor %}
+              <td class="text-end text-nowrap">
+                <a href="{% url 'training:majcom_edit' soldier.pk %}?year={{ selected_year }}" class="btn btn-bir btn-sm">Edit</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="{{ majcom_fields|length|add:9 }}">No soldiers match the current filters.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if is_paginated %}
+      <nav class="pagination-ledger mt-3" aria-label="Major commitment pages">
+        {% if page_obj.has_previous %}
+          <a class="btn btn-outline-secondary btn-sm"
+             href="?page={{ page_obj.previous_page_number }}&year={{ selected_year }}&q={{ search_query|urlencode }}&organization={{ organization_filter }}">Previous</a>
+        {% else %}
+          <span class="btn btn-outline-secondary btn-sm disabled">Previous</span>
+        {% endif %}
+
+        <div class="pagination-pages">
+          {% for page_number in paginator.page_range %}
+            {% if page_number == page_obj.number %}
+              <span class="page-link-bir active">{{ page_number }}</span>
+            {% else %}
+              <a class="page-link-bir"
+                 href="?page={{ page_number }}&year={{ selected_year }}&q={{ search_query|urlencode }}&organization={{ organization_filter }}">{{ page_number }}</a>
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        {% if page_obj.has_next %}
+          <a class="btn btn-outline-secondary btn-sm"
+             href="?page={{ page_obj.next_page_number }}&year={{ selected_year }}&q={{ search_query|urlencode }}&organization={{ organization_filter }}">Next</a>
+        {% else %}
+          <span class="btn btn-outline-secondary btn-sm disabled">Next</span>
+        {% endif %}
+      </nav>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+  const chartNode = document.getElementById("majcom-charts");
+  if (chartNode) {
+    const data = JSON.parse(chartNode.textContent);
+    const palette = ["#123524", "#C5A24A", "#641C2A", "#C45A1A", "#3F4A2C", "#8B6914"];
+
+    const coverageCanvas = document.getElementById("majcomCoverageChart");
+    if (coverageCanvas && data.coverage_values) {
+      new Chart(coverageCanvas, {
+        type: "pie",
+        data: {
+          labels: data.coverage_labels,
+          datasets: [{
+            data: data.coverage_values,
+            backgroundColor: ["#123524", "#C5A24A"],
+            borderColor: "#F2EFE6",
+            borderWidth: 2
+          }]
+        },
+        options: {
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "right",
+              labels: { boxWidth: 12, font: { family: "IBM Plex Mono, monospace", size: 11 } }
+            }
+          }
+        }
+      });
+    }
+
+    const fieldCanvas = document.getElementById("majcomFieldChart");
+    if (fieldCanvas && data.field_values) {
+      new Chart(fieldCanvas, {
+        type: "bar",
+        data: {
+          labels: data.field_labels,
+          datasets: [{
+            label: "Soldiers",
+            data: data.field_values,
+            backgroundColor: palette,
+            borderColor: "#C5A24A",
+            borderWidth: 1
+          }]
+        },
+        options: {
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 },
+              grid: { color: "rgba(23, 26, 23, 0.08)" }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { family: "IBM Plex Mono, monospace", size: 11 } }
+            }
+          }
+        }
+      });
+    }
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,290 @@
+{% extends "authentication/dashboard_base.html" %}
+{% load static %}
+
+{% block title %}{% if is_unit_dashboard %}{{ unit_profile.short_name|default:"1 BIR" }} Dashboard{% else %}{{ active_section_label }}{% endif %} · 1 BIR{% endblock %}
+
+{% block extra_css %}
+{% if is_unit_dashboard %}
+<link rel="stylesheet" href="{% static 'authentication/css/unit-dashboard.css' %}">
+{% endif %}
+{% endblock %}
+
+{% block dashboard_content %}
+{% if is_unit_dashboard %}
+<div class="unit-dashboard">
+  <div class="unit-dashboard-header">
+    <div>
+      <div class="section-eyebrow">{{ unit_profile.short_name|default:"1 BIR" }} · The Gallant One</div>
+      <h1>{{ unit_profile.unit_name|default:"1 Bangladesh Infantry Regiment" }}</h1>
+      <p class="text-secondary mb-0">
+        {% if unit_profile.motto %}{{ unit_profile.motto }}{% if unit_profile.location %} · {{ unit_profile.location }}{% endif %}
+        {% elif unit_profile.location %}{{ unit_profile.location }}
+        {% else %}Welcome, {{ request.user.name }}.{% endif %}
+      </p>
+    </div>
+    {% if can_manage_dashboard %}
+    <a href="{% url 'authentication:dashboard_manage' %}" class="btn btn-bir">
+      <i class="bi bi-pencil-square me-1"></i> Edit dashboard
+    </a>
+    {% endif %}
+  </div>
+
+  {% if dashboard_slides %}
+  <div id="unitShowcase" class="carousel slide unit-hero-carousel" data-bs-ride="carousel" data-bs-interval="5500">
+    <div class="carousel-indicators">
+      {% for slide in dashboard_slides %}
+      <button type="button" data-bs-target="#unitShowcase" data-bs-slide-to="{{ forloop.counter0 }}"
+              {% if forloop.first %}class="active" aria-current="true"{% endif %}
+              aria-label="Slide {{ forloop.counter }}"></button>
+      {% endfor %}
+    </div>
+    <div class="carousel-inner">
+      {% for slide in dashboard_slides %}
+      <div class="carousel-item{% if forloop.first %} active{% endif %}">
+        <img src="{{ slide.image.url }}" alt="{{ slide.title|default:unit_profile.short_name }}">
+        {% if slide.title or slide.caption %}
+        <div class="carousel-caption">
+          {% if slide.title %}<h2>{{ slide.title }}</h2>{% endif %}
+          {% if slide.caption %}<p>{{ slide.caption }}</p>{% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% if dashboard_slides|length > 1 %}
+    <button class="carousel-control-prev" type="button" data-bs-target="#unitShowcase" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Previous</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#unitShowcase" data-bs-slide="next">
+      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Next</span>
+    </button>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="unit-hero-fallback">
+    <div class="unit-hero-crest">
+      {% if unit_profile.crest %}
+        <img src="{{ unit_profile.crest.url }}" alt="{{ unit_profile.short_name }} crest">
+      {% else %}
+        {% include "authentication/partials/bir_logo.svg.html" %}
+      {% endif %}
+    </div>
+    <div>
+      <p class="unit-hero-kicker">Bangladesh Army</p>
+      <h2>{{ unit_profile.short_name|default:"1 BIR" }}</h2>
+      {% if unit_profile.motto %}<p class="unit-hero-motto">{{ unit_profile.motto }}</p>{% endif %}
+      {% if unit_profile.war_cry %}<p class="unit-hero-cry">{{ unit_profile.war_cry }}</p>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if unit_profile.location or unit_profile.raised_on or unit_profile.war_cry or unit_profile.motto %}
+  <div class="unit-identity-strip">
+    {% if unit_profile.location %}
+    <div class="unit-identity-item">
+      <span class="unit-identity-label">Station</span>
+      <span>{{ unit_profile.location }}</span>
+    </div>
+    {% endif %}
+    {% if unit_profile.raised_on %}
+    <div class="unit-identity-item">
+      <span class="unit-identity-label">Raised</span>
+      <span>{{ unit_profile.raised_on }}</span>
+    </div>
+    {% endif %}
+    {% if unit_profile.war_cry %}
+    <div class="unit-identity-item">
+      <span class="unit-identity-label">War cry</span>
+      <span>{{ unit_profile.war_cry }}</span>
+    </div>
+    {% endif %}
+    {% if unit_profile.motto %}
+    <div class="unit-identity-item">
+      <span class="unit-identity-label">Motto</span>
+      <span>{{ unit_profile.motto }}</span>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if unit_profile.about %}
+  <section class="unit-about">
+    <p>{{ unit_profile.about|linebreaksbr }}</p>
+  </section>
+  {% endif %}
+
+  {% if current_co %}
+  <section class="unit-quote-panel">
+    <div class="unit-quote-mark" aria-hidden="true">“</div>
+    <blockquote>
+      {% if current_co.quote %}
+        <p>{{ current_co.quote }}</p>
+      {% else %}
+        <p>Command of {{ unit_profile.short_name|default:"1 BIR" }} is a charge of honour, discipline, and care for every soldier of the battalion.</p>
+      {% endif %}
+    </blockquote>
+    <footer>
+      {% if current_co.photo %}
+        <img src="{{ current_co.photo.url }}" alt="">
+      {% endif %}
+      <div>
+        <strong>{{ current_co.rank }} {{ current_co.name }}</strong>
+        <span>Commanding Officer{% if current_co.tenure_label %} · {{ current_co.tenure_label }}{% endif %}</span>
+      </div>
+    </footer>
+  </section>
+  {% endif %}
+
+  {% if highlights %}
+  <section class="unit-section">
+    <div class="unit-section-head">
+      <div class="section-eyebrow">The battalion</div>
+      <h2>What we stand for</h2>
+    </div>
+    <div class="row g-3">
+      {% for item in highlights %}
+      <div class="col-md-6 col-xl-3">
+        <article class="unit-highlight-card h-100">
+          <i class="bi {{ item.icon|default:'bi-award' }}"></i>
+          <h3>{{ item.title }}</h3>
+          {% if item.body %}<p>{{ item.body }}</p>{% endif %}
+        </article>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if achievements %}
+  <section class="unit-section">
+    <div class="unit-section-head">
+      <div class="section-eyebrow">Record of honour</div>
+      <h2>Achievements</h2>
+    </div>
+    <div class="row g-3">
+      {% for item in achievements %}
+      <div class="col-md-6">
+        <article class="unit-achievement-card">
+          {% if item.image %}
+            <img src="{{ item.image.url }}" alt="">
+          {% endif %}
+          <div>
+            {% if item.year %}<span class="unit-year">{{ item.year }}</span>{% endif %}
+            <h3>{{ item.title }}</h3>
+            {% if item.description %}<p>{{ item.description }}</p>{% endif %}
+          </div>
+        </article>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="unit-section">
+    <div class="unit-section-head">
+      <div class="section-eyebrow">Command lineage</div>
+      <h2>Hall of Fame</h2>
+      <p>Commanding Officers who have led {{ unit_profile.short_name|default:"1 BIR" }}.</p>
+    </div>
+    {% if hall_of_fame %}
+    <div class="unit-hof-grid">
+      {% for officer in hall_of_fame %}
+      <article class="unit-hof-card{% if officer.is_current %} is-current{% endif %}">
+        <div class="unit-hof-photo">
+          {% if officer.photo %}
+            <img src="{{ officer.photo.url }}" alt="{{ officer.name }}">
+          {% else %}
+            <span>{{ officer.name|slice:":1"|upper }}</span>
+          {% endif %}
+        </div>
+        <div class="unit-hof-body">
+          {% if officer.is_current %}<span class="unit-serving">Serving CO</span>{% endif %}
+          <h3>{{ officer.rank }} {{ officer.name }}</h3>
+          {% if officer.tenure_label %}<p class="unit-tenure">{{ officer.tenure_label }}</p>{% endif %}
+          {% if officer.quote %}<p class="unit-hof-quote">“{{ officer.quote }}”</p>{% endif %}
+          {% if officer.citation %}<p class="unit-hof-citation">{{ officer.citation }}</p>{% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="unit-empty">
+      Hall of Fame entries will appear here once the admin records Commanding Officers.
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% else %}
+<div class="section-header d-flex flex-wrap align-items-end justify-content-between gap-3">
+  <div>
+    <div class="section-eyebrow">{{ active_section_label }}</div>
+    <h1>Good day, {{ request.user.name }}</h1>
+    <p class="text-secondary mb-0">{{ active_section_description }}</p>
+  </div>
+</div>
+
+{% if admin_stats %}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-label">Persons Enlisted</div>
+      <div class="stat-value">{{ admin_stats.persons }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-label">Ranks Added</div>
+      <div class="stat-value">{{ admin_stats.ranks }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-label">Reports Generated</div>
+      <div class="stat-value">{{ admin_stats.reports }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-label">Portal Users</div>
+      <div class="stat-value">{{ admin_stats.users }}</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3">
+  {% for item in section_items %}
+    <div class="col-md-6 col-xl-4">
+      {% if item.url %}
+        <a href="{{ item.url }}" class="section-card-link d-block h-100">
+          <div class="card section-card h-100" data-serial="{{ forloop.counter|stringformat:'02d' }}">
+            <div class="card-body">
+              <h2 class="card-title h6">{{ item.title }}</h2>
+              <p class="card-text small text-secondary mb-0">{{ item.text }}</p>
+            </div>
+          </div>
+        </a>
+      {% else %}
+        <div class="card section-card section-card-soon h-100" data-serial="{{ forloop.counter|stringformat:'02d' }}">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+              <h2 class="card-title h6 mb-0">{{ item.title }}</h2>
+              <span class="badge badge-soon">Soon</span>
+            </div>
+            <p class="card-text small text-secondary mb-0">{{ item.text }}</p>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  {% empty %}
+    <div class="col-12">
+      <div class="alert alert-info mb-0">
+        No options are available in this section for your account.
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

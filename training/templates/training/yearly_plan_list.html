@@ -1,0 +1,74 @@
+{% extends "authentication/dashboard_base.html" %}
+{% block title %}Trg Plan · 1 BIR{% endblock %}
+{% block dashboard_content %}
+<div class="section-header text-center">
+  <div class="section-eyebrow">G Matter</div>
+  <h1>Trg Plan – 1 BIR</h1>
+  <p class="text-secondary mb-0">Automated four-cycle plan for {% if selected_organization %}{{ selected_organization }}{% else %}1 BIR{% endif %}, {{ selected_year }}.</p>
+</div>
+
+<div class="card form-panel mb-4"><div class="card-body p-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-sm-4 col-lg-3"><label class="form-label" for="id_year">Year</label><select class="form-select" id="id_year" name="year">{% for year in year_choices %}<option value="{{ year }}"{% if year == selected_year %} selected{% endif %}>{{ year }}</option>{% endfor %}</select></div>
+    <div class="col-sm-5 col-lg-4"><label class="form-label" for="id_organization">Company</label><select class="form-select" id="id_organization" name="organization"><option value="">1 BIR / All Companies</option>{% for organization in organizations %}<option value="{{ organization.pk }}"{% if selected_organization.pk == organization.pk %} selected{% endif %}>{{ organization }}</option>{% endfor %}</select></div>
+    <div class="col-auto"><button class="btn btn-outline-secondary" type="submit">Show</button></div>
+    {% if not selected_organization %}
+      <div class="col-auto ms-sm-auto">
+        <button class="btn btn-bir" type="submit" form="preparePlan" name="prepare" value="1">Edit Plan</button>
+      </div>
+    {% endif %}
+  </form>
+</div></div>
+<form id="preparePlan" method="post" action="?year={{ selected_year }}">{% csrf_token %}</form>
+
+{% if selected_organization %}
+<div class="card form-panel"><div class="card-body p-0"><div class="table-responsive">
+  <table class="table table-bordered mb-0 align-middle text-center small career-plan-board">
+    <thead>
+      <tr><th rowspan="3">Ser</th><th rowspan="3">Army No</th><th rowspan="3">Rk</th><th rowspan="3">Name</th><th rowspan="3">Coy</th><th colspan="4">Yearly Career Plan</th><th colspan="4">Participation in Trg/Sports Cmpt</th><th colspan="6">Participation in Maj Cmt</th><th colspan="11">Indl Qual</th></tr>
+      <tr><th rowspan="2">1st Cycle</th><th rowspan="2">2nd Cycle</th><th rowspan="2">3rd Cycle</th><th rowspan="2">4th Cycle</th><th rowspan="2">1st Cycle</th><th rowspan="2">2nd Cycle</th><th rowspan="2">3rd Cycle</th><th rowspan="2">4th Cycle</th><th rowspan="2">Gp Trg</th><th rowspan="2">ST</th><th rowspan="2">WT</th><th rowspan="2">FI</th><th rowspan="2">IHWF</th><th rowspan="2">FF</th><th colspan="2">Bde Lvl Cadre</th><th colspan="2">Div Lvl Cadre</th><th colspan="2">Army Lvl Course</th><th colspan="2">Misc Trg</th><th rowspan="2">PE</th><th rowspan="2">Spl</th><th rowspan="2">Qual for Next Promotion</th></tr>
+      <tr><th>Name</th><th>Result</th><th>Name</th><th>Result</th><th>Name</th><th>Result</th><th>Name</th><th>Result</th></tr>
+    </thead>
+    <tbody>{% for soldier in company_soldiers %}<tr>
+      <td>{{ forloop.counter }}</td><td>{{ soldier.army_number }}</td><td>{{ soldier.rank }}</td><td class="text-start">{{ soldier.name }}</td><td>{{ soldier.organization }}</td>
+      {% for cell in soldier.cycle_plan %}<td>{{ cell.option_label }}</td>{% endfor %}
+      {% for value in soldier.sports_cycle_values %}<td>{{ value }}</td>{% endfor %}
+      <td>{{ soldier.majcom.gp_trg|default:"—" }}</td><td>{{ soldier.majcom.st|default:"—" }}</td><td>{{ soldier.majcom.wt|default:"—" }}</td><td>{{ soldier.majcom.fi|default:"—" }}</td><td>{{ soldier.majcom.ihwf|default:"—" }}</td><td>{{ soldier.majcom.ff|default:"—" }}</td>
+      {% for cell in soldier.individual_qual_cells %}<td>{{ cell.name }}</td><td>{{ cell.result }}</td>{% endfor %}
+      <td>{{ soldier.individual_qualification.pe|default:"—" }}</td><td>{{ soldier.individual_qualification.spl|default:"—" }}</td><td>{% if soldier.individual_qualification %}{% if soldier.individual_qualification.qual_for_next_promotion %}Yes{% else %}No{% endif %}{% else %}—{% endif %}</td>
+    </tr>{% empty %}<tr><td colspan="29">No soldiers found in this company.</td></tr>{% endfor %}</tbody>
+  </table>
+</div></div></div>
+<style>.career-plan-board{min-width:1800px}.career-plan-board th{white-space:nowrap}.career-plan-board td{min-width:72px}</style>
+{% elif edit_mode %}
+<form method="post" action="?year={{ selected_year }}{% if selected_organization %}&organization={{ selected_organization.pk }}{% endif %}&edit=1">
+  {% csrf_token %}{{ formset.management_form }}
+  {% if formset.non_form_errors %}<div class="alert alert-danger">{{ formset.non_form_errors }}</div>{% endif %}
+  <div class="card form-panel"><div class="card-body p-0"><div class="table-responsive">
+    <table class="table table-bordered table-ledger mb-0 align-middle">
+      <thead><tr><th>Ser</th><th>Cycle</th><th>Bde Lvl Cadre</th><th>Div Lvl Cadre</th><th>Pre-Course/PE</th><th>GPT</th><th>Misc Trg Event</th></tr></thead>
+      <tbody>{% for form in formset %}<tr>
+        <td>{{ forloop.counter }}.{% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}</td>
+        <td>{{ form.instance.get_cycle_display }}</td>
+        <td>{{ form.bde_lvl_cadre }}{{ form.bde_lvl_cadre.errors }}</td>
+        <td>{{ form.div_lvl_cadre }}{{ form.div_lvl_cadre.errors }}</td>
+        <td>{{ form.pre_course_pe }}{{ form.pre_course_pe.errors }}</td>
+        <td>{{ form.gpt }}{{ form.gpt.errors }}</td>
+        <td>{{ form.misc_trg_event }}{{ form.misc_trg_event.errors }}</td>
+      </tr>{% endfor %}</tbody>
+    </table>
+  </div></div></div>
+  <div class="d-flex gap-2 mt-3"><button class="btn btn-bir" type="submit">Save Plan</button><a class="btn btn-outline-secondary" href="?year={{ selected_year }}{% if selected_organization %}&organization={{ selected_organization.pk }}{% endif %}">Cancel</a></div>
+</form>
+{% else %}
+<div class="card form-panel"><div class="card-body p-0"><div class="table-responsive">
+  <table class="table table-bordered table-ledger mb-0 align-middle">
+    <thead><tr><th>Ser</th><th>Cycle</th><th>Bde Lvl Cadre</th><th>Div Lvl Cadre</th><th>Pre-Course/PE</th><th>GPT</th><th>Misc Trg Event</th></tr></thead>
+    <tbody>{% for row in rows %}<tr>
+      <td>{{ forloop.counter }}.</td><td>{{ row.get_cycle_display }}</td>
+      <td>{{ row.bde_lvl_cadre|default:"—"|linebreaksbr }}</td><td>{{ row.div_lvl_cadre|default:"—"|linebreaksbr }}</td><td>{{ row.pre_course_pe|default:"—"|linebreaksbr }}</td><td>{{ row.gpt|default:"—"|linebreaksbr }}</td><td>{{ row.misc_trg_event|default:"—"|linebreaksbr }}</td>
+    </tr>{% endfor %}</tbody>
+  </table>
+</div></div></div>
+{% endif %}
+{% endblock %}

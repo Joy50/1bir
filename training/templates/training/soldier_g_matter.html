@@ -1,0 +1,12 @@
+{% extends "authentication/dashboard_base.html" %}
+{% block title %}G Matters · {{ soldier.name }}{% endblock %}
+{% block dashboard_content %}
+<div class="section-header d-flex flex-wrap align-items-end justify-content-between gap-3">
+  <div><div class="section-eyebrow">G Matter // Soldier</div><h1>{{ soldier.name }}</h1><p class="text-secondary mb-0">{{ soldier.army_number }} · {{ soldier.rank }} · {{ soldier.organization }}</p></div>
+  <a href="{% url 'common:soldier_list' %}" class="btn btn-outline-secondary">Back to Soldiers</a>
+</div>
+<div class="alert alert-info">Use Military Courses &amp; Qualifications for course-level, course-name, result, PE, specialist qualification, and promotion data.</div>
+<div class="row g-3">
+  {% for item in g_matter_links %}<div class="col-md-6 col-xl-4"><a href="{{ item.url }}" class="section-card-link d-block h-100"><div class="card section-card h-100" data-serial="{{ forloop.counter|stringformat:'02d' }}"><div class="card-body"><h2 class="card-title h6">{{ item.title }}</h2><p class="card-text small text-secondary mb-0">{{ item.text }}</p></div></div></a></div>{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,205 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}Individual Qualification · 1 BIR{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header">
+  <div class="section-eyebrow">Training // Individual Qualification</div>
+  <h1>Edit Individual Qualification</h1>
+  <p class="text-secondary mb-0">
+    Year, SPL, and next promotion are saved for {{ soldier.name }} in {{ selected_year }}.
+    Add as many course levels and course names with results as needed.
+  </p>
+</div>
+
+<div class="card form-panel mb-4">
+  <div class="card-body p-4">
+    <div class="form-eyebrow mb-3">Soldier</div>
+    <div class="dossier-grid">
+      <div class="dossier-field">
+        <span class="form-label">Army Number</span>
+        <div class="dossier-value">{{ soldier.army_number }}</div>
+      </div>
+      <div class="dossier-field">
+        <span class="form-label">Name</span>
+        <div class="dossier-value">{{ soldier.name }}</div>
+      </div>
+      <div class="dossier-field">
+        <span class="form-label">Rank</span>
+        <div class="dossier-value">{{ soldier.rank }}</div>
+      </div>
+      <div class="dossier-field">
+        <span class="form-label">Company</span>
+        <div class="dossier-value">{{ soldier.organization }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card form-panel">
+  <div class="card-body p-4">
+    <form method="post" novalidate class="form-ledger">
+      {% csrf_token %}
+      {{ courses_by_level|json_script:"qual-courses-data" }}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="form-eyebrow mb-3">Qualification</div>
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label for="{{ form.year.id_for_label }}" class="form-label">Year</label>
+          {{ form.year }}
+          {% if form.year.errors %}<div class="text-danger small">{{ form.year.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-3 mb-3">
+          <label for="{{ form.spl.id_for_label }}" class="form-label">SPL</label>
+          {{ form.spl }}
+          {% if form.spl.errors %}<div class="text-danger small">{{ form.spl.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-3 mb-3">
+          <label for="{{ form.pe.id_for_label }}" class="form-label">PE</label>
+          {{ form.pe }}
+          {% if form.pe.errors %}<div class="text-danger small">{{ form.pe.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-2 mb-3">
+          <label class="form-label" for="{{ form.qual_for_next_promotion.id_for_label }}">Next promotion</label>
+          <div class="form-check mt-2">
+            {{ form.qual_for_next_promotion }}
+            <label class="form-check-label" for="{{ form.qual_for_next_promotion.id_for_label }}">Qualified</label>
+          </div>
+          {% if form.qual_for_next_promotion.errors %}<div class="text-danger small">{{ form.qual_for_next_promotion.errors }}</div>{% endif %}
+        </div>
+      </div>
+
+      <section class="qual-level-part" data-formset="{{ formset.prefix }}" style="margin-top: 0.5rem;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="form-eyebrow mb-0">Courses</div>
+          <button type="button" class="btn btn-add-inline" data-add-formset="{{ formset.prefix }}">
+            Add more
+          </button>
+        </div>
+
+        {{ formset.management_form }}
+
+        {% if formset.non_form_errors %}
+          <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+        {% endif %}
+
+        <div class="inline-forms" id="{{ formset.prefix }}-forms">
+          {% for course_form in formset %}
+            {% include "training/qual_formset_row.html" with form=course_form %}
+          {% endfor %}
+        </div>
+
+        <template id="{{ formset.prefix }}-empty">
+          {% include "training/qual_formset_row.html" with form=formset.empty_form %}
+        </template>
+      </section>
+
+      <div class="d-flex gap-2 mt-3">
+        <button type="submit" class="btn btn-bir">Save</button>
+        <button type="button" class="btn btn-add-inline" data-add-formset="{{ formset.prefix }}">
+          Add more
+        </button>
+        <a href="{{ back_url }}" class="btn btn-outline-secondary">Back</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const coursesByLevel = JSON.parse(
+    document.getElementById("qual-courses-data").textContent
+  );
+
+  function filterCourseSelect(levelSelect) {
+    const row = levelSelect.closest(".inline-form");
+    if (!row) {
+      return;
+    }
+    const courseSelect = row.querySelector("[data-qual-course]");
+    if (!courseSelect) {
+      return;
+    }
+    const levelId = levelSelect.value;
+    const selected = courseSelect.getAttribute("data-selected") || courseSelect.value;
+    const courses = coursesByLevel[levelId] || [];
+    courseSelect.innerHTML = '<option value="">---------</option>';
+    courses.forEach(function (course) {
+      const option = document.createElement("option");
+      option.value = String(course.id);
+      option.textContent = course.name;
+      if (String(course.id) === String(selected)) {
+        option.selected = true;
+      }
+      courseSelect.appendChild(option);
+    });
+  }
+
+  function bindExistingRows() {
+    document.querySelectorAll("[data-qual-level]").forEach(function (select) {
+      const row = select.closest(".inline-form");
+      const courseSelect = row && row.querySelector("[data-qual-course]");
+      if (courseSelect && courseSelect.value) {
+        courseSelect.setAttribute("data-selected", courseSelect.value);
+      }
+      if (select.value) {
+        filterCourseSelect(select);
+      }
+    });
+  }
+
+  bindExistingRows();
+
+  document.addEventListener("change", function (event) {
+    if (event.target.matches("[data-qual-level]")) {
+      const row = event.target.closest(".inline-form");
+      const courseSelect = row && row.querySelector("[data-qual-course]");
+      if (courseSelect) {
+        courseSelect.removeAttribute("data-selected");
+      }
+      filterCourseSelect(event.target);
+    }
+  });
+
+  document.addEventListener("click", function (event) {
+    const addButton = event.target.closest("[data-add-formset]");
+    if (addButton) {
+      const prefix = addButton.getAttribute("data-add-formset");
+      const total = document.getElementById("id_" + prefix + "-TOTAL_FORMS");
+      const template = document.getElementById(prefix + "-empty");
+      const container = document.getElementById(prefix + "-forms");
+      if (!total || !template || !container) {
+        return;
+      }
+      const index = total.value;
+      container.insertAdjacentHTML(
+        "beforeend",
+        template.innerHTML.replaceAll("__prefix__", index)
+      );
+      total.value = String(Number(index) + 1);
+      return;
+    }
+
+    const removeButton = event.target.closest("[data-remove-form]");
+    if (!removeButton) {
+      return;
+    }
+    const row = removeButton.closest(".inline-form");
+    if (!row) {
+      return;
+    }
+    const deleteField = row.querySelector('input[name$="-DELETE"]');
+    if (deleteField) {
+      deleteField.checked = true;
+      row.classList.add("is-deleted");
+    } else {
+      row.remove();
+    }
+  });
+</script>
+{% endblock %}

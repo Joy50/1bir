@@ -1,0 +1,36 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}Generate Posting Order · 1 BIR{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header">
+  <div class="section-eyebrow">CO posting</div>
+  <h1>Generate Posting Order</h1>
+  <p class="text-secondary mb-0">The soldier stays on the current strength until an officer accepts the posting.</p>
+</div>
+<div class="card form-panel">
+  <div class="card-body p-4">
+    <form method="post" class="row g-3" novalidate>
+      {% csrf_token %}
+      <div class="col-md-6">
+        <label class="form-label" for="{{ form.soldier.id_for_label }}">Soldier</label>
+        {{ form.soldier }}
+        {{ form.soldier.errors }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="{{ form.to_organization.id_for_label }}">Post to</label>
+        {{ form.to_organization }}
+        {{ form.to_organization.errors }}
+      </div>
+      <div class="col-12">
+        <label class="form-label" for="{{ form.remarks.id_for_label }}">Remarks</label>
+        {{ form.remarks }}
+      </div>
+      <div class="col-12">
+        <button class="btn btn-bir" type="submit">Generate Posting Order</button>
+        <a class="btn btn-outline-secondary" href="{% url 'duty:posting_list' %}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

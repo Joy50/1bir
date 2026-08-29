@@ -1,0 +1,21 @@
+{% extends "authentication/dashboard_base.html" %}
+{% block title %}Statistics · 1 BIR{% endblock %}
+{% block dashboard_content %}
+<div class="section-header"><div class="section-eyebrow">Admin</div><h1>Statistics</h1></div>
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Persons</div><div class="stat-value">{{ stats.persons }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Ranks</div><div class="stat-value">{{ stats.ranks }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Reports</div><div class="stat-value">{{ stats.reports }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Users</div><div class="stat-value">{{ stats.users }}</div></div></div>
+</div>
+<div class="card form-panel"><div class="card-body p-4">
+  <table class="table table-ledger mb-0">
+    <thead><tr><th>Organization</th><th>Strength</th></tr></thead>
+    <tbody>
+      {% for org in by_org %}
+        <tr><td>{{ org }}</td><td>{{ org.strength }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}

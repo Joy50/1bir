@@ -1,0 +1,37 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}Duty Posts · 1 BIR{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header d-flex flex-wrap justify-content-between align-items-end gap-3">
+  <div>
+    <div class="section-eyebrow">Q Matter</div>
+    <h1>Duty posts</h1>
+    <p class="text-secondary mb-0">Configure Unit Duty and Station Duty posts with day and night strength.</p>
+  </div>
+  <a href="{% url 'duty:post_create' %}" class="btn btn-bir">Add post</a>
+</div>
+<div class="card form-panel">
+  <div class="card-body p-4">
+    <table class="table table-ledger mb-0">
+      <thead><tr><th>Post</th><th>Type</th><th>Day</th><th>Night</th><th>Total</th><th>Company</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for post in posts %}
+          <tr>
+            <td class="fw-medium">{{ post.name }}</td>
+            <td>{{ post.get_duty_type_display }}</td>
+            <td>{{ post.day_strength }}</td>
+            <td>{{ post.night_strength }}</td>
+            <td>{{ post.total_strength }}</td>
+            <td>{{ post.organization|default:"—" }}</td>
+            <td>{% if post.is_active %}Active{% else %}Inactive{% endif %}</td>
+            <td class="text-end"><a class="btn btn-outline-secondary btn-sm" href="{% url 'duty:post_edit' post.pk %}">Edit</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="text-secondary">No duty posts yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
