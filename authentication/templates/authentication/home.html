@@ -1,5 +1,4 @@
 {% extends "authentication/dashboard_base.html" %}
-<<<<<<< HEAD
 {% load static %}
 
 {% block title %}{% if is_unit_dashboard %}{{ unit_profile.short_name|default:"1 BIR" }} Dashboard{% else %}{{ active_section_label }}{% endif %} · 1 BIR{% endblock %}
@@ -218,12 +217,6 @@
   </section>
 </div>
 {% else %}
-=======
-
-{% block title %}{{ active_section_label }} · 1 BIR{% endblock %}
-
-{% block dashboard_content %}
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 <div class="section-header d-flex flex-wrap align-items-end justify-content-between gap-3">
   <div>
     <div class="section-eyebrow">{{ active_section_label }}</div>
@@ -293,8 +286,5 @@
     </div>
   {% endfor %}
 </div>
-<<<<<<< HEAD
 {% endif %}
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 {% endblock %}

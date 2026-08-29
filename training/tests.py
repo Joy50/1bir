@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from datetime import date, timedelta
 
 from django.test import TestCase, override_settings
@@ -24,14 +23,6 @@ class TrainingHomeTests(TestCase):
     def test_g_matter_template_uses_numbered_section_cards(self):
         from django.template.loader import get_template
 
-=======
-from django.template.loader import get_template
-from django.test import SimpleTestCase
-
-
-class TrainingHomeTests(SimpleTestCase):
-    def test_g_matter_template_uses_numbered_section_cards(self):
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         source = get_template("training/training_home.html").template.source
         for label in (
             "Trg Plan",
@@ -46,7 +37,6 @@ class TrainingHomeTests(SimpleTestCase):
         self.assertEqual(source.count("card section-card h-100"), 6)
         for serial in range(1, 7):
             self.assertIn(f'data-serial="{serial:02d}"', source)
-<<<<<<< HEAD
 
 
 class LeavePermissionTests(TestCase):
@@ -305,5 +295,3 @@ class YearlyPlanGetTests(TestCase):
         response = self.client.get(reverse("training:yearly_plan_list"))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(UnitTrainingCyclePlan.objects.count(), 0)
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf

@@ -3,10 +3,6 @@ charset-normalizer
 Django
 pillow
 reportlab
-<<<<<<< HEAD
 sqlparse
-=======
-sqlpars
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 tzdata
 whitenoise

@@ -29,7 +29,6 @@ class Rank(models.Model):
 
 
 class Organization(models.Model):
-<<<<<<< HEAD
     KIND_UNIT = "unit"
     KIND_BATTALION = "battalion"
     KIND_COMPANY = "company"
@@ -57,8 +56,6 @@ class Organization(models.Model):
         KIND_PLATOON: KIND_SECTION,
     }
 
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
     organization_name = models.CharField(max_length=100)
     parent_organization = models.ForeignKey(
         "self",
@@ -67,7 +64,6 @@ class Organization(models.Model):
         blank=True,
         null=True,
     )
-<<<<<<< HEAD
     unit_kind = models.CharField(
         "organization type",
         max_length=20,
@@ -89,16 +85,10 @@ class Organization(models.Model):
                 name="unique_root_organization_name",
             ),
         ]
-=======
-
-    class Meta:
-        ordering = ["organization_name"]
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
     def __str__(self):
         return self.organization_name
 
-<<<<<<< HEAD
     def allowed_parent_kinds(self):
         return self.PARENT_KINDS.get(self.unit_kind, frozenset())
 
@@ -158,8 +148,6 @@ class Organization(models.Model):
             return kinds[0]
         return " or ".join(kinds)
 
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
 class CivilEducationLevel(models.Model):
     level_name = models.CharField(max_length=100, unique=True)
@@ -250,7 +238,6 @@ class Person(models.Model):
         super().clean()
         if self.dob and self.doe and self.doe <= self.dob:
             raise ValidationError({"doe": "Date of enrollment must be after date of birth."})
-<<<<<<< HEAD
         self._normalize_optional_unique_fields()
 
     def _normalize_optional_unique_fields(self):
@@ -274,40 +261,15 @@ class Person(models.Model):
         self._normalize_optional_unique_fields()
         self.present_age = self.years_since(self.dob)
         self.present_service_years = self.years_since(self.doe)
-=======
-
-    def save(self, *args, **kwargs):
-        today = date.today()
-        if self.dob:
-            self.present_age = (
-                today.year
-                - self.dob.year
-                - ((today.month, today.day) < (self.dob.month, self.dob.day))
-            )
-        if self.doe:
-            self.present_service_years = (
-                today.year
-                - self.doe.year
-                - ((today.month, today.day) < (self.doe.month, self.doe.day))
-            )
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         super().save(*args, **kwargs)
 
     @property
     def age(self):
-<<<<<<< HEAD
         return self.years_since(self.dob)
 
     @property
     def service_years(self):
         return self.years_since(self.doe)
-=======
-        return self.present_age
-
-    @property
-    def service_years(self):
-        return self.present_service_years
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
     @property
     def civil_education(self):
@@ -408,11 +370,7 @@ class ServiceHistory(models.Model):
         constraints = [
             models.CheckConstraint(
                 condition=models.Q(end_date__isnull=True)
-<<<<<<< HEAD
                 | models.Q(end_date__gte=models.F("start_date")),
-=======
-                | models.Q(end_date__gt=models.F("start_date")),
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
                 name="service_history_valid_dates",
             ),
         ]

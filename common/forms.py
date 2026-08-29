@@ -38,7 +38,6 @@ class RankForm(StyledModelForm):
 class OrganizationForm(StyledModelForm):
     class Meta:
         model = Organization
-<<<<<<< HEAD
         fields = ("organization_name", "unit_kind", "parent_organization")
         labels = {
             "unit_kind": "Organization type",
@@ -65,9 +64,6 @@ class OrganizationForm(StyledModelForm):
         if cleaned_data.get("unit_kind") == Organization.KIND_UNIT:
             cleaned_data["parent_organization"] = None
         return cleaned_data
-=======
-        fields = ("organization_name", "parent_organization")
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
 
 class EducationLevelForm(StyledModelForm):
@@ -139,16 +135,8 @@ class PersonForm(StyledModelForm):
             "permanent_address": forms.Textarea(attrs={"rows": 2}),
         }
 
-<<<<<<< HEAD
         widgets["reason_unqualified"] = forms.Textarea(attrs={"rows": 2})
         widgets["social_media_links"] = forms.Textarea(attrs={"rows": 2})
-=======
-        for _field in (
-            "reason_unqualified", "parents_details", "spouse_children_details",
-            "social_media_links",
-        ):
-            widgets[_field] = forms.Textarea(attrs={"rows": 2})
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
     def __init__(self, *args, organization_queryset=None, **kwargs):
         super().__init__(*args, **kwargs)

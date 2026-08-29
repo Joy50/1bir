@@ -238,11 +238,7 @@ class RankCreateView(AdminPortalMixin, CreateView):
 class OrganizationCreateView(AdminPortalMixin, CreateView):
     model = Organization
     form_class = OrganizationForm
-<<<<<<< HEAD
     template_name = "common/organization_form.html"
-=======
-    template_name = "common/simple_form.html"
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
     success_url = reverse_lazy("common:create_organization")
 
     def get_context_data(self, **kwargs):
@@ -251,13 +247,10 @@ class OrganizationCreateView(AdminPortalMixin, CreateView):
         context["existing_items"] = Organization.objects.select_related(
             "parent_organization"
         )
-<<<<<<< HEAD
         context["org_kind_map"] = {
             str(org.pk): org.unit_kind
             for org in Organization.objects.only("id", "unit_kind")
         }
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         return context
 
     def form_valid(self, form):

@@ -2,11 +2,7 @@ from django import forms
 
 from common.models import Person
 
-<<<<<<< HEAD
 from .models import DutyAssignment, DutyPost, ParadeAbsenceDocument, SoldierPosting
-=======
-from .models import DutyAssignment, DutyPost, SoldierPosting
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 from .services import available_posts, get_or_create_open_tour, suggested_soldiers
 
 
@@ -150,7 +146,6 @@ class DutyAssignForm(forms.ModelForm):
                 "Assign remaining soldiers first. The tour cannot repeat until everyone finishes.",
             )
         return cleaned
-<<<<<<< HEAD
 
 
 ABSENCE_DOCUMENT_EXTENSIONS = ("pdf", "doc", "docx")
@@ -200,5 +195,3 @@ class ParadeAbsenceDocumentForm(forms.ModelForm):
         if size > ABSENCE_DOCUMENT_MAX_BYTES:
             raise forms.ValidationError("The file must be 10 MB or smaller.")
         return uploaded
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf

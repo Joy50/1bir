@@ -25,7 +25,6 @@
   .parade-section-row th { background: #173f25 !important; color: #fff; letter-spacing: .08em; }
   .parade-report-card .p-4 { padding: .75rem 1rem !important; }
   .parade-report-card { margin-bottom: .75rem !important; }
-<<<<<<< HEAD
   .parade-docs-table { table-layout: auto; font-size: .9rem; }
   .parade-docs-table th, .parade-docs-table td {
     text-align: left;
@@ -34,9 +33,6 @@
   }
   .parade-docs-table td:first-child { white-space: normal; }
   .parade-upload-form .form-label { margin-bottom: .3rem; }
-=======
-  .parade-report-card .h5 { font-size: 1rem; }
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
   @media (min-width: 1500px) {
     .parade-table-wrap { overflow-x: hidden !important; }
     .parade-table { font-size: .72rem; }
@@ -67,10 +63,7 @@
     .parade-report-card .h5 { font-size: 9pt; }
     .parade-report-card p { font-size: 6pt; }
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-<<<<<<< HEAD
     .parade-upload-form, .parade-docs-table .btn { display: none !important; }
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
   }
 </style>
 {% endblock %}
@@ -82,7 +75,6 @@
     <h1>Daily Parade State - 1 BIR</h1>
     <p class="text-secondary mb-0">{{ parade_state.report_date|date:"d F Y" }} · Automatically generated from personnel and approved leave records.</p>
   </div>
-<<<<<<< HEAD
   <div class="d-flex gap-2">
     <button type="button" class="btn btn-outline-secondary" onclick="window.print()">Print</button>
     <form method="post" action="{% url 'duty:parade_state_edit' parade_state.pk %}">
@@ -91,9 +83,6 @@
       <button type="submit" class="btn btn-bir">Refresh this date</button>
     </form>
   </div>
-=======
-  <div class="d-flex gap-2"><button type="button" class="btn btn-outline-secondary" onclick="window.print()">Print</button><a href="{% url 'duty:parade_state_list' %}" class="btn btn-bir">Refresh today's state</a></div>
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 </div>
 
   <div class="card form-panel parade-report-card"><div class="card-body p-0">
@@ -122,7 +111,6 @@
     </tbody></table></div>
   </div></div>
 
-<<<<<<< HEAD
   <div class="card form-panel parade-report-card">
     <div class="card-body p-0">
       <div class="p-4 pb-2">
@@ -196,14 +184,5 @@
       </div>
     </div>
   </div>
-=======
-  <div class="card form-panel parade-report-card"><div class="card-body p-0">
-    <div class="p-4 pb-2"><h2 class="h5 mb-1">Details of absent</h2></div>
-    <div class="table-responsive parade-table-wrap"><table class="table table-bordered parade-table mb-0"><thead><tr><th>Coy</th>{% for key, label in absence_columns %}<th>{{ label }}</th>{% endfor %}<th>Total</th></tr></thead><tbody>
-      {% for row in rows %}<tr><th>{{ row.organization }}</th>{% for cell in row.detail_cells %}<td>{{ cell.value }}</td>{% endfor %}<td class="parade-total">{{ row.detail_total }}</td></tr>{% endfor %}
-      <tr class="parade-total"><th>Total</th>{% for cell in absence_total_cells %}<td>{{ cell.value }}</td>{% endfor %}<td>{{ detail_grand_total }}</td></tr>
-    </tbody></table></div>
-  </div></div>
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
 {% endblock %}

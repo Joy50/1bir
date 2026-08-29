@@ -1,11 +1,7 @@
 from django.contrib import admin
 
 from .models import (
-<<<<<<< HEAD
     DutyAssignment, DutyPost, DutyTour, ParadeAbsenceDocument, ParadeState, ParadeStateCompany,
-=======
-    DutyAssignment, DutyPost, DutyTour, ParadeState, ParadeStateCompany,
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
     SoldierPosting,
 )
 
@@ -51,7 +47,6 @@ class ParadeStateCompanyInline(admin.TabularInline):
     extra = 0
 
 
-<<<<<<< HEAD
 class ParadeAbsenceDocumentInline(admin.TabularInline):
     model = ParadeAbsenceDocument
     extra = 0
@@ -62,9 +57,3 @@ class ParadeAbsenceDocumentInline(admin.TabularInline):
 class ParadeStateAdmin(admin.ModelAdmin):
     list_display = ("report_date", "authorized_total", "created_by", "updated_at")
     inlines = (ParadeStateCompanyInline, ParadeAbsenceDocumentInline,)
-=======
-@admin.register(ParadeState)
-class ParadeStateAdmin(admin.ModelAdmin):
-    list_display = ("report_date", "authorized_total", "created_by", "updated_at")
-    inlines = (ParadeStateCompanyInline,)
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
