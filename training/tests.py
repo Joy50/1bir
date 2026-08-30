@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from authentication.models import User
+from common.models import Organization
 from common.test_factories import make_org, make_soldier, make_user
 from training.models import LeaveState, UnitTrainingCyclePlan
 from training.services import leave_board_url
@@ -307,3 +308,129 @@ class RelatedFormTemplateTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "IPFT")
         self.assertContains(response, "Add more")
+
+
+def make_state_board_tree(prefix):
+    unit = make_org(f"{prefix} Unit", kind=Organization.KIND_UNIT)
+    company = make_org(
+        f"{prefix} Company",
+        parent=unit,
+        kind=Organization.KIND_COMPANY,
+    )
+    platoon = make_org(
+        f"{prefix} Pl-1",
+        parent=company,
+        kind=Organization.KIND_PLATOON,
+    )
+    return unit, company, platoon
+
+
+@override_settings(STORAGES=STORAGES)
+class TrainingStateBoardTests(TestCase):
+    def _assert_board_dropdown(self, response, unit, company, platoon):
+        names = [str(organization) for organization in response.context["organizations"]]
+        self.assertIn(str(unit), names)
+        self.assertIn(str(company), names)
+        self.assertNotIn(str(platoon), names)
+
+    def test_ipft_summary_shows_unit_and_company_not_platoon(self):
+        unit, company, platoon = make_state_board_tree("IPFT Board")
+        make_soldier(unit, army_number="BA-IPFT-U", name="Unit HQ Soldier")
+        make_soldier(platoon, army_number="BA-IPFT-P", name="Platoon Soldier")
+        admin = make_user("ipftboard", role=User.ROLE_ADMIN)
+        self.client.force_login(admin)
+
+        response = self.client.get(reverse("training:ipft_list"))
+
+        self.assertEqual(response.status_code, 200)
+        labels = [str(row["label"]) for row in response.context["summary_rows"]]
+        self.assertIn(str(unit), labels)
+        self.assertIn(str(company), labels)
+        self.assertNotIn(str(platoon), labels)
+        self.assertNotContains(response, "Coy HQ")
+        self.assertNotContains(response, ">Pl-1<")
+        self._assert_board_dropdown(response, unit, company, platoon)
+        posted = {
+            str(row["label"]): row["posted"] for row in response.context["summary_rows"]
+        }
+        self.assertEqual(posted[str(unit)], 1)
+        self.assertEqual(posted[str(company)], 1)
+
+    def test_ipft_company_filter_includes_platoon_soldiers(self):
+        _unit, company, platoon = make_state_board_tree("IPFT Drill")
+        make_soldier(platoon, army_number="BA-IPFT-D", name="Drill Soldier")
+        admin = make_user("ipftdrill", role=User.ROLE_ADMIN)
+        self.client.force_login(admin)
+
+        response = self.client.get(
+            reverse("training:ipft_list"),
+            {"organization": str(company.pk)},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        soldiers = response.context["individual_soldiers"]
+        self.assertEqual(len(soldiers), 1)
+        self.assertEqual(soldiers[0].army_number, "BA-IPFT-D")
+
+    def test_ret_summary_shows_unit_and_company_not_platoon(self):
+        unit, company, platoon = make_state_board_tree("RET Board")
+        make_soldier(platoon, army_number="BA-RET-P", name="RET Platoon Soldier")
+        admin = make_user("retboard", role=User.ROLE_ADMIN)
+        self.client.force_login(admin)
+
+        response = self.client.get(reverse("training:ret_list"))
+
+        self.assertEqual(response.status_code, 200)
+        labels = [str(row["label"]) for row in response.context["classification_rows"]]
+        self.assertIn(str(unit), labels)
+        self.assertIn(str(company), labels)
+        self.assertNotIn(str(platoon), labels)
+        self._assert_board_dropdown(response, unit, company, platoon)
+
+    def test_speed_march_summary_shows_unit_and_company_not_platoon(self):
+        unit, company, platoon = make_state_board_tree("March Board")
+        make_soldier(platoon, army_number="BA-SPD-P", name="March Platoon Soldier")
+        admin = make_user("marchboard", role=User.ROLE_ADMIN)
+        self.client.force_login(admin)
+
+        response = self.client.get(reverse("training:speed_march_list"))
+
+        self.assertEqual(response.status_code, 200)
+        labels = [str(row["label"]) for row in response.context["rows"]]
+        self.assertIn(str(unit), labels)
+        self.assertIn(str(company), labels)
+        self.assertNotIn(str(platoon), labels)
+        self._assert_board_dropdown(response, unit, company, platoon)
+
+    def test_assault_course_summary_shows_unit_and_company_not_platoon(self):
+        unit, company, platoon = make_state_board_tree("Aslt Board")
+        make_soldier(platoon, army_number="BA-ASLT-P", name="Aslt Platoon Soldier")
+        admin = make_user("asltboard", role=User.ROLE_ADMIN)
+        self.client.force_login(admin)
+
+        response = self.client.get(reverse("training:assault_course_list"))
+
+        self.assertEqual(response.status_code, 200)
+        labels = [str(row["label"]) for row in response.context["rows"]]
+        self.assertIn(str(unit), labels)
+        self.assertIn(str(company), labels)
+        self.assertNotIn(str(platoon), labels)
+        self._assert_board_dropdown(response, unit, company, platoon)
+
+    def test_qual_filter_lists_unit_and_company_and_includes_platoon_soldiers(self):
+        unit, company, platoon = make_state_board_tree("Qual Board")
+        make_soldier(platoon, army_number="BA-QUAL-P", name="Qual Platoon Soldier")
+        admin = make_user("qualboard", role=User.ROLE_ADMIN)
+        self.client.force_login(admin)
+
+        listing = self.client.get(reverse("training:qual_list"))
+        self.assertEqual(listing.status_code, 200)
+        self._assert_board_dropdown(listing, unit, company, platoon)
+
+        filtered = self.client.get(
+            reverse("training:qual_list"),
+            {"organization": str(company.pk)},
+        )
+        self.assertEqual(filtered.status_code, 200)
+        army_numbers = [soldier.army_number for soldier in filtered.context["soldiers"]]
+        self.assertIn("BA-QUAL-P", army_numbers)
