@@ -86,10 +86,10 @@
 </div>
 
   <div class="card form-panel parade-report-card"><div class="card-body p-0">
-    <div class="p-4 pb-2 text-center"><h2 class="h5 mb-1">DAILY PARADE STATE - 1 BIR</h2><p class="small text-secondary mb-0">Posted comes from current strength; absent comes from approved leave active on this date.</p></div>
+    <div class="p-4 pb-2 text-center"><h2 class="h5 mb-1">DAILY PARADE STATE - 1 BIR</h2><p class="small text-secondary mb-0">AUTH is the live posted strength of {{ battalion_name|default:"1 BIR" }}. Absent comes from approved leave active on this date.</p></div>
     <div class="table-responsive parade-table-wrap"><table class="table table-bordered parade-table mb-0"><thead><tr><th>Coy / State</th>{% for key, label in rank_columns %}<th>{{ label }}</th>{% endfor %}<th>Total</th></tr></thead><tbody>
       <tr class="parade-section-row"><th colspan="18">AUTH</th></tr>
-      <tr><th>1 BIR</th>{% for cell in auth_cells %}<td>{{ cell.value }}</td>{% endfor %}<td class="parade-total">{{ authorized_total }}</td></tr>
+      <tr><th>{{ battalion_name|default:"1 BIR" }}</th>{% for cell in auth_cells %}<td>{{ cell.value }}</td>{% endfor %}<td class="parade-total">{{ authorized_total }}</td></tr>
 
       <tr class="parade-section-row"><th colspan="18">POSTED</th></tr>
       {% for row in rows %}

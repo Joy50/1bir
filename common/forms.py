@@ -45,7 +45,7 @@ class OrganizationForm(StyledModelForm):
         }
         help_texts = {
             "unit_kind": "Unit contains battalions, a battalion contains companies, a company contains platoons, and a platoon contains sections.",
-            "parent_organization": "Leave blank for a Unit. A Battalion may also stand alone with no parent.",
+            "parent_organization": "Leave blank for a Unit. A Battalion sits under a Unit. A Company sits under a Battalion or a Unit.",
         }
 
     def __init__(self, *args, **kwargs):
@@ -57,6 +57,9 @@ class OrganizationForm(StyledModelForm):
             parents = parents.exclude(pk=self.instance.pk)
         self.fields["parent_organization"].queryset = parents
         self.fields["parent_organization"].required = False
+        self.fields["parent_organization"].label_from_instance = (
+            lambda org: f"{org.organization_name} ({org.get_unit_kind_display()})"
+        )
         self.fields["unit_kind"].required = True
 
     def clean(self):

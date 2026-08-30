@@ -81,6 +81,29 @@ class OrganizationCreateViewTests(TestCase):
         self.assertContains(response, "Organization type")
         for label in ("Unit", "Battalion", "Company", "Platoon", "Section"):
             self.assertContains(response, label)
+        self.assertContains(response, "1 BIR (Unit)")
+        unit = Organization.objects.get(organization_name="1 BIR")
+        self.assertEqual(unit.unit_kind, Organization.KIND_UNIT)
+        self.assertIn(
+            unit,
+            response.context["form"].fields["parent_organization"].queryset,
+        )
+
+    def test_battalion_can_use_unit_parent(self):
+        admin = make_user("orgadmin_bn", role=User.ROLE_ADMIN)
+        unit = Organization.objects.get(organization_name="1 BIR")
+        self.client.force_login(admin)
+        response = self.client.post(
+            reverse("common:create_organization"),
+            {
+                "organization_name": "Attached Battalion",
+                "unit_kind": Organization.KIND_BATTALION,
+                "parent_organization": str(unit.pk),
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        battalion = Organization.objects.get(organization_name="Attached Battalion")
+        self.assertEqual(battalion.parent_organization_id, unit.pk)
 
     def test_company_requires_battalion_parent(self):
         admin = make_user("orgadmin2", role=User.ROLE_ADMIN)
@@ -110,6 +133,22 @@ class OrganizationCreateViewTests(TestCase):
         company = Organization.objects.get(organization_name="Form Company")
         self.assertEqual(company.unit_kind, Organization.KIND_COMPANY)
         self.assertEqual(company.parent_organization_id, battalion.pk)
+
+    def test_company_can_use_unit_parent(self):
+        admin = make_user("orgadmin_unit", role=User.ROLE_ADMIN)
+        unit = Organization.objects.get(organization_name="1 BIR")
+        self.client.force_login(admin)
+        response = self.client.post(
+            reverse("common:create_organization"),
+            {
+                "organization_name": "Direct Company",
+                "unit_kind": Organization.KIND_COMPANY,
+                "parent_organization": str(unit.pk),
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        company = Organization.objects.get(organization_name="Direct Company")
+        self.assertEqual(company.parent_organization_id, unit.pk)
 
 
 class PersonTests(TestCase):

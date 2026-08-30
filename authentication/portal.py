@@ -239,7 +239,7 @@ PORTAL_SECTIONS = {
         "description": "Personnel, leave, parade state, duty state, postings, and service particulars.",
         "path_prefixes": (
             "/soldiers", "/training/leave", "/parade-state", "/postings",
-            "/duty/", "/duty/assign", "/duty/map",
+            "/duty/", "/duty/assign", "/duty/map", "/duty/roster",
         ),
         "items": [
             {
@@ -256,6 +256,18 @@ PORTAL_SECTIONS = {
                 "title": "Duty State",
                 "text": "View current duty details, duty posts, and tour progress.",
                 "url_name": "duty:home",
+            },
+            {
+                "title": "Daily Duty Roster",
+                "text": "Officer daily duty roster with named roll and PDF export.",
+                "url_name": "duty:roster_daily",
+                "roles": ("admin", "co", "officer"),
+            },
+            {
+                "title": "Monthly Duty Roster",
+                "text": "Officer monthly summary of soldier and post duty days.",
+                "url_name": "duty:roster_monthly",
+                "roles": ("admin", "co", "officer"),
             },
             {
                 "title": "Posting Record",

@@ -1,11 +1,27 @@
 from django.urls import path
 
-from . import views
+from . import roster_views, views
 
 app_name = "duty"
 
 urlpatterns = [
     path("duty/", views.DutyHomeView.as_view(), name="home"),
+    path("duty/roster/", roster_views.DutyRosterDailyView.as_view(), name="roster_daily"),
+    path(
+        "duty/roster/pdf/",
+        roster_views.DutyRosterDailyPDFView.as_view(),
+        name="roster_daily_pdf",
+    ),
+    path(
+        "duty/roster/monthly/",
+        roster_views.DutyRosterMonthlyView.as_view(),
+        name="roster_monthly",
+    ),
+    path(
+        "duty/roster/monthly/pdf/",
+        roster_views.DutyRosterMonthlyPDFView.as_view(),
+        name="roster_monthly_pdf",
+    ),
     path("duty/posts/", views.DutyPostListView.as_view(), name="post_list"),
     path("duty/posts/create/", views.DutyPostCreateView.as_view(), name="post_create"),
     path("duty/posts/<int:pk>/edit/", views.DutyPostUpdateView.as_view(), name="post_edit"),

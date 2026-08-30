@@ -26,6 +26,7 @@ from common.scoping import (
     get_accessible_companies,
     get_accessible_organization_ids,
     get_accessible_organizations,
+    get_battalion,
     get_parade_organizations,
 )
 from common.views import SoldierAccessMixin
@@ -33,7 +34,6 @@ from common.views import SoldierAccessMixin
 from .forms import DutyAssignForm, DutyPostForm, ParadeAbsenceDocumentForm, SoldierPostingForm
 from .models import (
     PARADE_ABSENCE_COLUMNS,
-    PARADE_AUTHORIZED_DEFAULTS,
     PARADE_RANK_COLUMNS,
     DutyAssignment,
     DutyPost,
@@ -48,8 +48,10 @@ from .services import (
     RAMU_LAT,
     RAMU_LNG,
     get_or_create_open_tour,
+    build_parade_counts,
     generate_parade_state,
     map_markers,
+    rollup_posted_totals,
     scoped_soldiers,
     suggested_soldiers,
     tour_progress,
@@ -634,11 +636,19 @@ class ParadeStateEditView(SoldierAccessMixin, View):
             for key, _label in PARADE_RANK_COLUMNS
         }
         absence_totals = {key: 0 for key, _label in PARADE_ABSENCE_COLUMNS}
+        live = None
+        if parade_state and parade_state.report_date == timezone.localdate():
+            live = build_parade_counts(parade_state.report_date)
         for organization in self.get_organizations():
             entry = entries.get(organization.pk)
-            posted_values = entry.posted_strength if entry else {}
-            absent_values = entry.absent_strength if entry else {}
-            detail_values = entry.absence_details if entry else {}
+            if live is not None:
+                posted_values = live["posted"].get(organization.pk, {})
+                absent_values = live["absent"].get(organization.pk, {})
+                detail_values = live["details"].get(organization.pk, {})
+            else:
+                posted_values = entry.posted_strength if entry else {}
+                absent_values = entry.absent_strength if entry else {}
+                detail_values = entry.absence_details if entry else {}
             rank_cells = []
             for key, label in PARADE_RANK_COLUMNS:
                 field_posted = f"posted_{organization.pk}_{key}"
@@ -678,19 +688,28 @@ class ParadeStateEditView(SoldierAccessMixin, View):
                 "detail_total": sum(cell["value"] for cell in detail_cells),
             })
 
-        authorized = (
-            parade_state.authorized_strength
-            if parade_state
-            else PARADE_AUTHORIZED_DEFAULTS
-        )
+        visible_ids = {organization.pk for organization in self.get_organizations()}
+        if live is not None:
+            authorized = rollup_posted_totals(live["posted"], visible_ids)
+        else:
+            authorized = {}
+            for organization in self.get_organizations():
+                entry = entries.get(organization.pk)
+                strength = entry.posted_strength if entry else {}
+                for key, _label in PARADE_RANK_COLUMNS:
+                    authorized[key] = authorized.get(key, 0) + self.number(
+                        strength.get(key)
+                    )
         auth_cells = []
         for key, label in PARADE_RANK_COLUMNS:
             name = f"authorized_{key}"
             value = self.number(posted.get(name) if posted is not None else authorized.get(key))
             auth_cells.append({"key": key, "label": label, "name": name, "value": value})
+        battalion = get_battalion(self.request.user)
         return {
             "rank_columns": PARADE_RANK_COLUMNS,
             "absence_columns": PARADE_ABSENCE_COLUMNS,
+            "battalion_name": battalion.organization_name if battalion else "1 BIR",
             "auth_cells": auth_cells,
             "authorized_total": sum(cell["value"] for cell in auth_cells),
             "rows": rows,

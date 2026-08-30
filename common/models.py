@@ -44,7 +44,7 @@ class Organization(models.Model):
     PARENT_KINDS = {
         KIND_UNIT: frozenset(),
         KIND_BATTALION: frozenset({KIND_UNIT}),
-        KIND_COMPANY: frozenset({KIND_BATTALION}),
+        KIND_COMPANY: frozenset({KIND_BATTALION, KIND_UNIT}),
         KIND_PLATOON: frozenset({KIND_COMPANY}),
         KIND_SECTION: frozenset({KIND_PLATOON}),
     }

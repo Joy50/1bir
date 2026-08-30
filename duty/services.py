@@ -1,16 +1,21 @@
 from collections import defaultdict
+from datetime import date, timedelta
 
 from django.db import transaction
-from django.db.models import OuterRef, Subquery
+from django.db.models import OuterRef, Q, Subquery
 from django.utils import timezone
 
 from common.models import Organization, Person
-from common.scoping import get_accessible_organization_ids, organization_lookup, rollup_to_parade_organization
+from common.scoping import (
+    collect_descendant_ids,
+    get_accessible_organization_ids,
+    organization_lookup,
+    rollup_to_parade_organization,
+)
 from training.models import LeaveState
 
 from .models import (
     PARADE_ABSENCE_COLUMNS,
-    PARADE_AUTHORIZED_DEFAULTS,
     PARADE_RANK_COLUMNS,
     DutyAssignment,
     DutyPost,
@@ -64,28 +69,17 @@ def parade_absence_key(leave):
     return "c_l"
 
 
-@transaction.atomic
-def generate_parade_state(user, report_date=None, refresh=False):
-    """Build or refresh a daily parade state from personnel and leave data."""
-    report_date = report_date or timezone.localdate()
-    state = ParadeState.objects.filter(report_date=report_date).first()
-    if state and not refresh:
-        return state
-    if state is None:
-        state = ParadeState.objects.create(
-            report_date=report_date,
-            created_by=user,
-            authorized_strength=PARADE_AUTHORIZED_DEFAULTS,
-        )
-    elif not state.authorized_strength:
-        state.authorized_strength = PARADE_AUTHORIZED_DEFAULTS
-        state.save(update_fields=["authorized_strength", "updated_at"])
+def empty_rank_counts():
+    return {key: 0 for key, _label in PARADE_RANK_COLUMNS}
 
-    rank_keys = [key for key, _label in PARADE_RANK_COLUMNS]
-    absence_keys = [key for key, _label in PARADE_ABSENCE_COLUMNS]
-    posted = defaultdict(lambda: {key: 0 for key in rank_keys})
-    absent = defaultdict(lambda: {key: 0 for key in rank_keys})
-    details = defaultdict(lambda: {key: 0 for key in absence_keys})
+
+def build_parade_counts(report_date):
+    """Count posted and absent strength from personnel and approved leave."""
+    posted = defaultdict(empty_rank_counts)
+    absent = defaultdict(empty_rank_counts)
+    details = defaultdict(
+        lambda: {key: 0 for key, _label in PARADE_ABSENCE_COLUMNS}
+    )
 
     people = list(Person.objects.select_related("rank", "organization"))
     orgs_by_id = organization_lookup()
@@ -112,6 +106,41 @@ def generate_parade_state(user, report_date=None, refresh=False):
         organization_id = bucket.pk
         absent[organization_id][parade_rank_key(person.rank.rank_name)] += 1
         details[organization_id][parade_absence_key(leave)] += 1
+
+    return {"posted": posted, "absent": absent, "details": details}
+
+
+def rollup_posted_totals(posted_by_org, organization_ids=None):
+    totals = empty_rank_counts()
+    for organization_id, counts in posted_by_org.items():
+        if organization_ids is not None and organization_id not in organization_ids:
+            continue
+        for key in totals:
+            totals[key] += int(counts.get(key) or 0)
+    return totals
+
+
+@transaction.atomic
+def generate_parade_state(user, report_date=None, refresh=False):
+    """Build or refresh a daily parade state from personnel and leave data."""
+    report_date = report_date or timezone.localdate()
+    state = ParadeState.objects.filter(report_date=report_date).first()
+    if state and not refresh:
+        return state
+    counts = build_parade_counts(report_date)
+    posted = counts["posted"]
+    absent = counts["absent"]
+    details = counts["details"]
+    authorized = rollup_posted_totals(posted)
+    if state is None:
+        state = ParadeState.objects.create(
+            report_date=report_date,
+            created_by=user,
+            authorized_strength=authorized,
+        )
+    else:
+        state.authorized_strength = authorized
+        state.save(update_fields=["authorized_strength", "updated_at"])
 
     organization_ids = set(posted.keys()) | set(absent.keys())
     organization_ids.update(
@@ -251,6 +280,220 @@ def suggested_soldiers(user, limit=12):
 
 def available_posts():
     return DutyPost.objects.filter(is_active=True)
+
+
+def parse_report_date(value, fallback=None):
+    fallback = fallback or timezone.localdate()
+    if not value:
+        return fallback
+    try:
+        return date.fromisoformat(str(value))
+    except ValueError:
+        return fallback
+
+
+def parse_report_month(value, fallback=None):
+    fallback = fallback or timezone.localdate().replace(day=1)
+    if not value:
+        return fallback
+    try:
+        year, month = (int(part) for part in str(value).split("-", 1))
+        return date(year, month, 1)
+    except (TypeError, ValueError):
+        return fallback
+
+
+def month_bounds(month_start):
+    if month_start.month == 12:
+        next_month = date(month_start.year + 1, 1, 1)
+    else:
+        next_month = date(month_start.year, month_start.month + 1, 1)
+    if month_start.month == 1:
+        previous_month = date(month_start.year - 1, 12, 1)
+    else:
+        previous_month = date(month_start.year, month_start.month - 1, 1)
+    return previous_month, next_month, next_month - timedelta(days=1)
+
+
+def roster_organization_ids(user, company=None):
+    if company is not None:
+        return collect_descendant_ids(company)
+    return get_accessible_organization_ids(user)
+
+
+def assignments_covering_range(start_date, end_date, organization_ids=None):
+    queryset = (
+        DutyAssignment.objects.exclude(status=DutyAssignment.STATUS_CANCELLED)
+        .filter(assigned_at__date__lte=end_date)
+        .filter(Q(completed_at__isnull=True) | Q(completed_at__date__gte=start_date))
+        .select_related(
+            "soldier",
+            "soldier__rank",
+            "soldier__organization",
+            "post",
+            "tour",
+            "assigned_by",
+        )
+        .order_by(
+            "post__duty_type",
+            "post__display_order",
+            "post__name",
+            "shift",
+            "soldier__army_number",
+        )
+    )
+    if organization_ids is not None:
+        queryset = queryset.filter(soldier__organization_id__in=organization_ids)
+    return queryset
+
+
+def assignment_span(assignment, start_date, end_date, today=None):
+    today = today or timezone.localdate()
+    start_day = max(timezone.localtime(assignment.assigned_at).date(), start_date)
+    end_day = min(
+        timezone.localtime(assignment.completed_at).date()
+        if assignment.completed_at
+        else today,
+        end_date,
+    )
+    if end_day < start_day:
+        return None, None
+    return start_day, end_day
+
+
+def daily_roster(report_date, organization_ids=None, company=None):
+    assignments = list(
+        assignments_covering_range(report_date, report_date, organization_ids)
+    )
+    named_rows = []
+    post_totals = {}
+    for assignment in assignments:
+        start_day, end_day = assignment_span(assignment, report_date, report_date)
+        if start_day is None:
+            continue
+        soldier = assignment.soldier
+        platoon = (
+            "Coy HQ"
+            if company and soldier.organization_id == company.pk
+            else soldier.organization.organization_name
+        )
+        named_rows.append({
+            "assignment": assignment,
+            "soldier": soldier,
+            "platoon": platoon,
+            "post": assignment.post,
+            "shift": assignment.shift,
+            "status": assignment.status,
+        })
+        bucket = post_totals.setdefault(
+            assignment.post_id,
+            {
+                "post": assignment.post,
+                "day": 0,
+                "night": 0,
+                "names_day": [],
+                "names_night": [],
+            },
+        )
+        bucket[assignment.shift] += 1
+        name = f"{soldier.rank} {soldier.name}"
+        if assignment.shift == DutyAssignment.SHIFT_DAY:
+            bucket["names_day"].append(name)
+        else:
+            bucket["names_night"].append(name)
+
+    for index, row in enumerate(named_rows, start=1):
+        row["serial"] = index
+
+    post_rows = []
+    for index, bucket in enumerate(
+        sorted(
+            post_totals.values(),
+            key=lambda item: (
+                item["post"].duty_type,
+                item["post"].display_order,
+                item["post"].name,
+            ),
+        ),
+        start=1,
+    ):
+        post_rows.append({
+            "serial": index,
+            "post": bucket["post"],
+            "day": bucket["day"],
+            "night": bucket["night"],
+            "total": bucket["day"] + bucket["night"],
+            "names_day": ", ".join(bucket["names_day"]) or "—",
+            "names_night": ", ".join(bucket["names_night"]) or "—",
+        })
+    return {
+        "named_rows": named_rows,
+        "post_rows": post_rows,
+        "day_total": sum(row["day"] for row in post_rows),
+        "night_total": sum(row["night"] for row in post_rows),
+    }
+
+
+def monthly_roster_summary(month_start, organization_ids=None, company=None):
+    today = timezone.localdate()
+    _previous, _next, month_end = month_bounds(month_start)
+    assignments = list(
+        assignments_covering_range(month_start, month_end, organization_ids)
+    )
+    soldiers = {}
+    posts = {}
+    for assignment in assignments:
+        start_day, end_day = assignment_span(assignment, month_start, month_end, today)
+        if start_day is None:
+            continue
+        days = (end_day - start_day).days + 1
+        soldier = assignment.soldier
+        row = soldiers.setdefault(
+            soldier.pk,
+            {
+                "soldier": soldier,
+                "platoon": (
+                    "Coy HQ"
+                    if company and soldier.organization_id == company.pk
+                    else soldier.organization.organization_name
+                ),
+                "day": 0,
+                "night": 0,
+            },
+        )
+        row[assignment.shift] += days
+        post_row = posts.setdefault(
+            assignment.post_id,
+            {"post": assignment.post, "day": 0, "night": 0},
+        )
+        post_row[assignment.shift] += days
+
+    soldier_rows = list(soldiers.values())
+    soldier_rows.sort(key=lambda row: row["soldier"].army_number)
+    for index, row in enumerate(soldier_rows, start=1):
+        row["serial"] = index
+        row["total"] = row["day"] + row["night"]
+
+    post_rows = list(posts.values())
+    post_rows.sort(
+        key=lambda row: (
+            row["post"].duty_type,
+            row["post"].display_order,
+            row["post"].name,
+        )
+    )
+    for index, row in enumerate(post_rows, start=1):
+        row["serial"] = index
+        row["total"] = row["day"] + row["night"]
+
+    return {
+        "soldier_rows": soldier_rows,
+        "post_rows": post_rows,
+        "soldier_day_total": sum(row["day"] for row in soldier_rows),
+        "soldier_night_total": sum(row["night"] for row in soldier_rows),
+        "post_day_total": sum(row["day"] for row in post_rows),
+        "post_night_total": sum(row["night"] for row in post_rows),
+    }
 
 
 def map_markers(user):

@@ -151,6 +151,8 @@ MESSAGE_TAGS = {
 # Soldier enlist/edit posts many inline formsets on one page.
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 
+CSRF_FAILURE_VIEW = "authentication.error_views.csrf_failure"
+
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration

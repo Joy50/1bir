@@ -36,6 +36,20 @@ class ParadeStateWriteTests(TestCase):
         again.refresh_from_db()
         self.assertEqual(again.updated_at, original_updated)
 
+    def test_auth_row_counts_live_personnel(self):
+        state = generate_parade_state(self.admin, timezone.localdate(), refresh=True)
+        self.client.force_login(self.admin)
+        page = self.client.get(reverse("duty:parade_state_edit", args=[state.pk]))
+        self.assertEqual(page.status_code, 200)
+        self.assertEqual(page.context["authorized_total"], 1)
+        self.assertEqual(page.context["posted_grand_total"], 1)
+
+        make_soldier(self.company, army_number="BA-LIVE")
+        refreshed = self.client.get(reverse("duty:parade_state_edit", args=[state.pk]))
+        self.assertEqual(refreshed.context["authorized_total"], 2)
+        self.assertEqual(refreshed.context["posted_grand_total"], 2)
+        self.assertEqual(ParadeState.objects.count(), 1)
+
     def test_viewing_parade_state_does_not_refresh(self):
         state = generate_parade_state(self.admin, timezone.localdate(), refresh=True)
         self.client.force_login(self.admin)
@@ -219,3 +233,78 @@ class DutyTourTests(TestCase):
         second = get_or_create_open_tour()
         self.assertEqual(first.pk, second.pk)
         self.assertEqual(DutyTour.objects.filter(status=DutyTour.STATUS_OPEN).count(), 1)
+
+
+@override_settings(STORAGES=STORAGES)
+class DutyRosterTests(TestCase):
+    def setUp(self):
+        battalion = make_org("1 BIR")
+        self.company_a = make_org("A Company", parent=battalion)
+        self.company_b = make_org("B Company", parent=battalion)
+        self.soldier_a = make_soldier(self.company_a, army_number="BA-A1", name="Alpha Duty")
+        self.soldier_b = make_soldier(self.company_b, army_number="BA-B1", name="Bravo Duty")
+        self.officer_a = make_user(
+            "roster_off_a",
+            role=User.ROLE_OFFICER,
+            organizations=[self.company_a],
+        )
+        self.officer_b = make_user(
+            "roster_off_b",
+            role=User.ROLE_OFFICER,
+            organizations=[self.company_b],
+        )
+        self.clerk = make_user("roster_clerk", role=User.ROLE_CLERK)
+        self.post = DutyPost.objects.create(
+            name="Roster Gate",
+            latitude=21.4,
+            longitude=92.1,
+            day_strength=2,
+            night_strength=2,
+        )
+        tour = DutyTour.objects.create(number=91)
+        DutyAssignment.objects.create(
+            tour=tour,
+            soldier=self.soldier_a,
+            post=self.post,
+            shift=DutyAssignment.SHIFT_DAY,
+            assigned_by=self.officer_a,
+        )
+
+    def test_officer_can_view_daily_and_monthly_roster(self):
+        self.client.force_login(self.officer_a)
+        daily = self.client.get(reverse("duty:roster_daily"))
+        self.assertEqual(daily.status_code, 200)
+        self.assertContains(daily, "Daily Duty Roster")
+        self.assertContains(daily, "Alpha Duty")
+        self.assertContains(daily, "Roster Gate")
+
+        monthly = self.client.get(reverse("duty:roster_monthly"))
+        self.assertEqual(monthly.status_code, 200)
+        self.assertContains(monthly, "Monthly Duty Roster Summary")
+        self.assertContains(monthly, "Alpha Duty")
+
+    def test_officer_does_not_see_other_company_on_roster(self):
+        self.client.force_login(self.officer_b)
+        daily = self.client.get(reverse("duty:roster_daily"))
+        self.assertEqual(daily.status_code, 200)
+        self.assertNotContains(daily, "Alpha Duty")
+
+    def test_clerk_cannot_open_roster(self):
+        self.client.force_login(self.clerk)
+        response = self.client.get(reverse("duty:roster_daily"))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("authentication:home"))
+
+    def test_daily_roster_pdf_downloads(self):
+        self.client.force_login(self.officer_a)
+        response = self.client.get(reverse("duty:roster_daily_pdf"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertTrue(response.content.startswith(b"%PDF"))
+        self.assertIn("attachment", response["Content-Disposition"])
+
+    def test_monthly_roster_pdf_downloads(self):
+        self.client.force_login(self.officer_a)
+        response = self.client.get(reverse("duty:roster_monthly_pdf"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.content.startswith(b"%PDF"))

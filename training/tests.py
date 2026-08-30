@@ -295,3 +295,15 @@ class YearlyPlanGetTests(TestCase):
         response = self.client.get(reverse("training:yearly_plan_list"))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(UnitTrainingCyclePlan.objects.count(), 0)
+
+
+@override_settings(STORAGES=STORAGES)
+class RelatedFormTemplateTests(TestCase):
+    def test_ipft_edit_renders(self):
+        soldier = make_soldier(make_org("A Company", parent=make_org("1 BIR")))
+        admin = make_user("ipftadmin", role=User.ROLE_ADMIN)
+        self.client.force_login(admin)
+        response = self.client.get(reverse("training:ipft_edit", args=[soldier.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "IPFT")
+        self.assertContains(response, "Add more")

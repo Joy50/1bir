@@ -11,12 +11,10 @@ def make_rank(name="Sgt"):
 
 def make_org(name, parent=None, kind=None):
     if kind is None:
-        if parent is None:
-            kind = Organization.KIND_BATTALION
-        else:
-            kind = Organization.CHILD_KIND.get(
-                parent.unit_kind, Organization.KIND_COMPANY
-            )
+        parent_kind = parent.unit_kind if parent is not None else None
+        kind = Organization.CHILD_KIND.get(
+            parent_kind, Organization.KIND_COMPANY
+        )
     org, created = Organization.objects.get_or_create(
         organization_name=name,
         parent_organization=parent,

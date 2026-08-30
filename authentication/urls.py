@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import dashboard_views, views
+from . import dashboard_views, error_views, views
 
 app_name = "authentication"
 
@@ -69,5 +69,10 @@ urlpatterns = [
         "dashboard/manage/<slug:kind>/<int:pk>/delete/",
         dashboard_views.DashboardResourceDeleteView.as_view(),
         name="dashboard_resource_delete",
+    ),
+    path(
+        "errors/<int:code>/",
+        error_views.preview,
+        name="error_preview",
     ),
 ]
