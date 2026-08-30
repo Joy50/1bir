@@ -1,5 +1,7 @@
 from django.db import migrations, models
 
+from common.compat import make_check_constraint
+
 
 def set_unit_kinds(apps, schema_editor):
     Organization = apps.get_model("common", "Organization")
@@ -66,13 +68,13 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name="servicehistory",
-            constraint=models.CheckConstraint(
-                condition=models.Q(
+            constraint=make_check_constraint(
+                models.Q(
                     ("end_date__isnull", True),
                     ("end_date__gte", models.F("start_date")),
                     _connector="OR",
                 ),
-                name="service_history_valid_dates",
+                "service_history_valid_dates",
             ),
         ),
     ]

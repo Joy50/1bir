@@ -4,6 +4,7 @@ from django.db import models
 from django.db.models import F, Q
 from django.utils import timezone
 
+from common.compat import make_check_constraint
 from common.models import Person
 
 
@@ -524,9 +525,9 @@ class LeaveState(models.Model):
         verbose_name = "Leave State"
         verbose_name_plural = "Leave States"
         constraints = [
-            models.CheckConstraint(
-                condition=Q(to_date__gte=F("from_date")),
-                name="leave_state_valid_dates",
+            make_check_constraint(
+                Q(to_date__gte=F("from_date")),
+                "leave_state_valid_dates",
             ),
         ]
 

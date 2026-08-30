@@ -3,6 +3,8 @@ from datetime import date
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from .compat import make_check_constraint
+
 
 class Rank(models.Model):
     CATEGORY_OFFICER = "officer"
@@ -225,9 +227,9 @@ class Person(models.Model):
     class Meta:
         ordering = ["army_number"]
         constraints = [
-            models.CheckConstraint(
-                condition=models.Q(doe__gt=models.F("dob")),
-                name="person_doe_after_dob",
+            make_check_constraint(
+                models.Q(doe__gt=models.F("dob")),
+                "person_doe_after_dob",
             ),
         ]
 
@@ -368,10 +370,10 @@ class ServiceHistory(models.Model):
     class Meta:
         ordering = ["-start_date"]
         constraints = [
-            models.CheckConstraint(
-                condition=models.Q(end_date__isnull=True)
+            make_check_constraint(
+                models.Q(end_date__isnull=True)
                 | models.Q(end_date__gte=models.F("start_date")),
-                name="service_history_valid_dates",
+                "service_history_valid_dates",
             ),
         ]
 
@@ -394,10 +396,10 @@ class CivilEducation(models.Model):
     class Meta:
         ordering = ["-from_date"]
         constraints = [
-            models.CheckConstraint(
-                condition=models.Q(to_date__isnull=True)
+            make_check_constraint(
+                models.Q(to_date__isnull=True)
                 | models.Q(to_date__gt=models.F("from_date")),
-                name="civil_education_valid_dates",
+                "civil_education_valid_dates",
             ),
         ]
 
@@ -415,10 +417,10 @@ class MedicalCategory(models.Model):
     class Meta:
         ordering = ["-from_date"]
         constraints = [
-            models.CheckConstraint(
-                condition=models.Q(to_date__isnull=True)
+            make_check_constraint(
+                models.Q(to_date__isnull=True)
                 | models.Q(to_date__gt=models.F("from_date")),
-                name="medical_category_valid_dates",
+                "medical_category_valid_dates",
             ),
         ]
 
@@ -457,10 +459,10 @@ class AppointmentHistory(models.Model):
     class Meta:
         ordering = ["-start_date"]
         constraints = [
-            models.CheckConstraint(
-                condition=models.Q(end_date__isnull=True)
+            make_check_constraint(
+                models.Q(end_date__isnull=True)
                 | models.Q(end_date__gt=models.F("start_date")),
-                name="appointment_valid_dates",
+                "appointment_valid_dates",
             ),
         ]
 

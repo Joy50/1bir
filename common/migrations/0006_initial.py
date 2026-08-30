@@ -2,6 +2,8 @@
 
 from django.db import migrations, models
 
+from common.compat import make_check_constraint
+
 
 class Migration(migrations.Migration):
 
@@ -12,18 +14,18 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddConstraint(
             model_name='appointmenthistory',
-            constraint=models.CheckConstraint(condition=models.Q(('end_date__isnull', True), ('end_date__gt', models.F('start_date')), _connector='OR'), name='appointment_valid_dates'),
+            constraint=make_check_constraint(models.Q(('end_date__isnull', True), ('end_date__gt', models.F('start_date')), _connector='OR'), 'appointment_valid_dates'),
         ),
         migrations.AddConstraint(
             model_name='civileducation',
-            constraint=models.CheckConstraint(condition=models.Q(('to_date__isnull', True), ('to_date__gt', models.F('from_date')), _connector='OR'), name='civil_education_valid_dates'),
+            constraint=make_check_constraint(models.Q(('to_date__isnull', True), ('to_date__gt', models.F('from_date')), _connector='OR'), 'civil_education_valid_dates'),
         ),
         migrations.AddConstraint(
             model_name='medicalcategory',
-            constraint=models.CheckConstraint(condition=models.Q(('to_date__isnull', True), ('to_date__gt', models.F('from_date')), _connector='OR'), name='medical_category_valid_dates'),
+            constraint=make_check_constraint(models.Q(('to_date__isnull', True), ('to_date__gt', models.F('from_date')), _connector='OR'), 'medical_category_valid_dates'),
         ),
         migrations.AddConstraint(
             model_name='servicehistory',
-            constraint=models.CheckConstraint(condition=models.Q(('end_date__isnull', True), ('end_date__gt', models.F('start_date')), _connector='OR'), name='service_history_valid_dates'),
+            constraint=make_check_constraint(models.Q(('end_date__isnull', True), ('end_date__gt', models.F('start_date')), _connector='OR'), 'service_history_valid_dates'),
         ),
     ]

@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 from pathlib import Path
 
+from django import VERSION as DJANGO_VERSION
 from django.contrib.messages import constants as message_constants
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -132,14 +133,17 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # WhiteNoise serves only files collected into STATIC_ROOT. User-uploaded media
 # remains the responsibility of the production web server or object storage.
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
+# STORAGES is Django 4.2+; Django 4.0.6 still uses STATICFILES_STORAGE.
+_STATICFILES_BACKEND = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+_DEFAULT_FILE_BACKEND = "django.core.files.storage.FileSystemStorage"
+if DJANGO_VERSION >= (4, 2):
+    STORAGES = {
+        "default": {"BACKEND": _DEFAULT_FILE_BACKEND},
+        "staticfiles": {"BACKEND": _STATICFILES_BACKEND},
+    }
+else:
+    DEFAULT_FILE_STORAGE = _DEFAULT_FILE_BACKEND
+    STATICFILES_STORAGE = _STATICFILES_BACKEND
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -157,8 +161,11 @@ CSRF_FAILURE_VIEW = "authentication.error_views.csrf_failure"
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+if DJANGO_VERSION >= (6, 0):
+    MAILERS = {
+        "default": {
+            "BACKEND": "django.core.mail.backends.console.EmailBackend",
+        },
+    }
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

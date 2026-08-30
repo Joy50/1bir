@@ -1,9 +1,11 @@
 from datetime import date
 
 from django.core.exceptions import ValidationError
+from django.db import models
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
+from common.compat import make_check_constraint
 from common.models import Organization, Person
 from common.pdf import build_soldier_pdf
 from common.scoping import collect_descendant_ids, get_accessible_companies
@@ -17,6 +19,15 @@ STORAGES = {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
     },
 }
+
+
+class CheckConstraintCompatTests(TestCase):
+    def test_builds_named_constraint_on_this_django(self):
+        constraint = make_check_constraint(
+            models.Q(doe__gt=models.F("dob")),
+            "person_doe_after_dob",
+        )
+        self.assertEqual(constraint.name, "person_doe_after_dob")
 
 
 class OrganizationTests(TestCase):
