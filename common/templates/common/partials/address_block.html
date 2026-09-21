@@ -1,0 +1,21 @@
+<div class="col-12">
+  <div class="small text-secondary text-uppercase">{{ title }}</div>
+  <div class="row g-2 mt-1">
+    <div class="col-md-6 col-lg-3">
+      <div class="small text-secondary">District</div>
+      <div>{{ district|default:"—" }}</div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <div class="small text-secondary">Sub district/Union</div>
+      <div>{{ sub_district_union|default:"—" }}</div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <div class="small text-secondary">Thana</div>
+      <div>{{ thana|default:"—" }}</div>
+    </div>
+    <div class="col-12">
+      <div class="small text-secondary">Full address</div>
+      <div>{{ full_address|default:"—" }}</div>
+    </div>
+  </div>
+</div>

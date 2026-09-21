@@ -90,7 +90,34 @@ class PersonAdmin(admin.ModelAdmin):
         ("Medical", {"fields": ("height", "overweight")} ),
         ("Promotion", {"fields": ("qualification_for_next_rank", "reason_unqualified")} ),
         ("Previous Unit/Organizations", {"description": "Generated from Appointment History entries below.", "fields": ("previous_unit_organizations",)}),
-        ("Identification & address", {"fields": ("nid_number", "birth_certificate_number", "phone_registration_nid", "phone_imei", "social_media_links", "passport_number", "passport_type", "service_id_card_number", "present_address", "permanent_address", "photo")} ),
+        (
+            "Identification & address",
+            {
+                "fields": (
+                    "nid_number",
+                    "birth_certificate_number",
+                    "phone_registration_nid",
+                    "phone_imei",
+                    "social_media_links",
+                    "passport_number",
+                    "passport_type",
+                    "service_id_card_number",
+                    (
+                        "present_district",
+                        "present_sub_district_union",
+                        "present_thana",
+                    ),
+                    "present_full_address",
+                    (
+                        "permanent_district",
+                        "permanent_sub_district_union",
+                        "permanent_thana",
+                    ),
+                    "permanent_full_address",
+                    "photo",
+                )
+            },
+        ),
     )
     inlines = (
         ServiceHistoryInline,

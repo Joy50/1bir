@@ -82,7 +82,25 @@ class PersonForm(StyledModelForm):
         ("Medical", ("height", "overweight")),
         ("Appointment & promotion", ("qualification_for_next_rank", "reason_unqualified")),
         ("Identification & online details", ("nid_number", "birth_certificate_number", "phone_registration_nid", "phone_imei", "social_media_links", "passport_number", "passport_type", "service_id_card_number")),
-        ("Address & photo", ("present_address", "permanent_address", "photo")),
+        (
+            "Present address",
+            (
+                "present_district",
+                "present_sub_district_union",
+                "present_thana",
+                "present_full_address",
+            ),
+        ),
+        (
+            "Permanent address",
+            (
+                "permanent_district",
+                "permanent_sub_district_union",
+                "permanent_thana",
+                "permanent_full_address",
+            ),
+        ),
+        ("Photo", ("photo",)),
     )
 
     class Meta:
@@ -112,8 +130,14 @@ class PersonForm(StyledModelForm):
             "passport_number",
             "passport_type",
             "service_id_card_number",
-            "present_address",
-            "permanent_address",
+            "present_district",
+            "present_sub_district_union",
+            "present_thana",
+            "present_full_address",
+            "permanent_district",
+            "permanent_sub_district_union",
+            "permanent_thana",
+            "permanent_full_address",
             "photo",
         )
         labels = {
@@ -126,7 +150,15 @@ class PersonForm(StyledModelForm):
             "birth_certificate_number": "Birth Certificate Number", "phone_registration_nid": "NID Used for Personal Cell Phone",
             "phone_imei": "IMEI No of Personal Cell Phone", "social_media_links": "Social Media ID Links",
             "passport_type": "Passport Type (Official/Unofficial)", "service_id_card_number": "Svc ID Card Number",
-            "permanent_address": "Permanent Address", "photo": "Photo (Uniform with Present Rank)",
+            "present_district": "District",
+            "present_sub_district_union": "Sub district/Union",
+            "present_thana": "Thana",
+            "present_full_address": "Full address",
+            "permanent_district": "District",
+            "permanent_sub_district_union": "Sub district/Union",
+            "permanent_thana": "Thana",
+            "permanent_full_address": "Full address",
+            "photo": "Photo (Uniform with Present Rank)",
         }
         widgets = {
             "dob": forms.DateInput(attrs={"type": "date"}),
@@ -134,8 +166,8 @@ class PersonForm(StyledModelForm):
             "dor": forms.DateInput(attrs={"type": "date"}),
             "discipline": forms.Textarea(attrs={"rows": 2}),
             "punishment": forms.Textarea(attrs={"rows": 2}),
-            "present_address": forms.Textarea(attrs={"rows": 2}),
-            "permanent_address": forms.Textarea(attrs={"rows": 2}),
+            "present_full_address": forms.Textarea(attrs={"rows": 2}),
+            "permanent_full_address": forms.Textarea(attrs={"rows": 2}),
         }
 
         widgets["reason_unqualified"] = forms.Textarea(attrs={"rows": 2})

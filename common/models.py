@@ -221,8 +221,22 @@ class Person(models.Model):
         null=True,
         unique=True,
     )
-    present_address = models.TextField(blank=True, null=True)
-    permanent_address = models.TextField(blank=True, null=True)
+    present_district = models.CharField(max_length=120, blank=True)
+    present_sub_district_union = models.CharField(
+        "present sub district/union",
+        max_length=120,
+        blank=True,
+    )
+    present_thana = models.CharField(max_length=120, blank=True)
+    present_full_address = models.TextField("present full address", blank=True)
+    permanent_district = models.CharField(max_length=120, blank=True)
+    permanent_sub_district_union = models.CharField(
+        "permanent sub district/union",
+        max_length=120,
+        blank=True,
+    )
+    permanent_thana = models.CharField(max_length=120, blank=True)
+    permanent_full_address = models.TextField("permanent full address", blank=True)
 
     class Meta:
         ordering = ["army_number"]
@@ -272,6 +286,33 @@ class Person(models.Model):
     @property
     def service_years(self):
         return self.years_since(self.doe)
+
+    @staticmethod
+    def _address_summary(district, sub_district_union, thana, full_address):
+        parts = [
+            str(value).strip()
+            for value in (district, sub_district_union, thana, full_address)
+            if value and str(value).strip()
+        ]
+        return ", ".join(parts)
+
+    @property
+    def present_address(self):
+        return self._address_summary(
+            self.present_district,
+            self.present_sub_district_union,
+            self.present_thana,
+            self.present_full_address,
+        )
+
+    @property
+    def permanent_address(self):
+        return self._address_summary(
+            self.permanent_district,
+            self.permanent_sub_district_union,
+            self.permanent_thana,
+            self.permanent_full_address,
+        )
 
     @property
     def civil_education(self):
