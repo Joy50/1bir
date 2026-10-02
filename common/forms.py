@@ -44,8 +44,8 @@ class OrganizationForm(StyledModelForm):
             "parent_organization": "Parent organization",
         }
         help_texts = {
-            "unit_kind": "Unit contains battalions, a battalion contains companies, a company contains platoons, and a platoon contains sections.",
-            "parent_organization": "Leave blank for a Unit. A Battalion sits under a Unit. A Company sits under a Battalion or a Unit.",
+            "unit_kind": "Unit → Company → Platoon → Section. ERE organizations sit under the Unit.",
+            "parent_organization": "Leave blank for a Unit. Companies, platoons, and sections need a parent.",
         }
 
     def __init__(self, *args, **kwargs):
