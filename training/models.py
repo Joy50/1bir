@@ -96,7 +96,7 @@ class UnitTrainingCyclePlan(models.Model):
         ]
 
     def __str__(self):
-        unit = self.organization or "Battalion"
+        unit = self.organization or "Unit"
         return f"{unit} - {self.year} {self.get_cycle_display()}"
 
 
