@@ -16,6 +16,8 @@
         <legend class="h6 border-bottom pb-2 mb-3">{{ group_title }}</legend>
         <div class="row g-3">
         {% for field in field_names %}
+          {% if field.name == "present_address" or field.name == "permanent_address" or field.name == "photo" or field.name|slice:":8" == "present_" or field.name|slice:":10" == "permanent_" %}
+          {% else %}
           <div class="{% if field.field.widget.input_type == 'textarea' %}col-12{% else %}col-md-6{% endif %}">
             {% if field.field.widget.input_type == "checkbox" %}
               <div class="form-check mt-4">
@@ -28,6 +30,7 @@
             {% endif %}
             {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
           </div>
+          {% endif %}
         {% endfor %}
         </div>
         {% if group_title == "Appointment & promotion" %}

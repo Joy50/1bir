@@ -1,31 +1,64 @@
+{% if "present_district" in form.fields %}
 <div class="mb-3">
   <div class="fw-semibold mb-2">Present address</div>
   <div class="row g-3">
-    {% for field in present_address_fields %}
-      <div class="{% if field.name == 'present_area_road_house' %}col-12{% else %}col-md-6 col-lg-3{% endif %}">
-        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-        {{ field }}
-        {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
-      </div>
-    {% endfor %}
+    <div class="col-md-6 col-lg-3">
+      <label class="form-label" for="{{ form.present_district.id_for_label }}">{{ form.present_district.label }}</label>
+      {{ form.present_district }}
+      {% if form.present_district.errors %}<div class="text-danger small">{{ form.present_district.errors }}</div>{% endif %}
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <label class="form-label" for="{{ form.present_upazila.id_for_label }}">{{ form.present_upazila.label }}</label>
+      {{ form.present_upazila }}
+      {% if form.present_upazila.errors %}<div class="text-danger small">{{ form.present_upazila.errors }}</div>{% endif %}
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <label class="form-label" for="{{ form.present_thana.id_for_label }}">{{ form.present_thana.label }}</label>
+      {{ form.present_thana }}
+      {% if form.present_thana.errors %}<div class="text-danger small">{{ form.present_thana.errors }}</div>{% endif %}
+    </div>
+    <div class="col-12">
+      <label class="form-label" for="{{ form.present_area_road_house.id_for_label }}">{{ form.present_area_road_house.label }}</label>
+      {{ form.present_area_road_house }}
+      {% if form.present_area_road_house.errors %}<div class="text-danger small">{{ form.present_area_road_house.errors }}</div>{% endif %}
+    </div>
   </div>
 </div>
 <div class="mb-3">
   <div class="fw-semibold mb-2">Permanent address</div>
   <div class="row g-3">
-    {% for field in permanent_address_fields %}
-      <div class="{% if field.name == 'permanent_area_road_house' %}col-12{% else %}col-md-6 col-lg-3{% endif %}">
-        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-        {{ field }}
-        {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
-      </div>
-    {% endfor %}
+    <div class="col-md-6 col-lg-3">
+      <label class="form-label" for="{{ form.permanent_district.id_for_label }}">{{ form.permanent_district.label }}</label>
+      {{ form.permanent_district }}
+      {% if form.permanent_district.errors %}<div class="text-danger small">{{ form.permanent_district.errors }}</div>{% endif %}
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <label class="form-label" for="{{ form.permanent_upazila.id_for_label }}">{{ form.permanent_upazila.label }}</label>
+      {{ form.permanent_upazila }}
+      {% if form.permanent_upazila.errors %}<div class="text-danger small">{{ form.permanent_upazila.errors }}</div>{% endif %}
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <label class="form-label" for="{{ form.permanent_thana.id_for_label }}">{{ form.permanent_thana.label }}</label>
+      {{ form.permanent_thana }}
+      {% if form.permanent_thana.errors %}<div class="text-danger small">{{ form.permanent_thana.errors }}</div>{% endif %}
+    </div>
+    <div class="col-12">
+      <label class="form-label" for="{{ form.permanent_area_road_house.id_for_label }}">{{ form.permanent_area_road_house.label }}</label>
+      {{ form.permanent_area_road_house }}
+      {% if form.permanent_area_road_house.errors %}<div class="text-danger small">{{ form.permanent_area_road_house.errors }}</div>{% endif %}
+    </div>
   </div>
 </div>
 <div class="row g-3">
   <div class="col-md-6">
-    <label class="form-label" for="{{ photo_field.id_for_label }}">{{ photo_field.label }}</label>
-    {{ photo_field }}
-    {% if photo_field.errors %}<div class="text-danger small">{{ photo_field.errors }}</div>{% endif %}
+    <label class="form-label" for="{{ form.photo.id_for_label }}">{{ form.photo.label }}</label>
+    {{ form.photo }}
+    {% if form.photo.errors %}<div class="text-danger small">{{ form.photo.errors }}</div>{% endif %}
   </div>
 </div>
+{% elif "present_address" in form.fields %}
+<div class="alert alert-warning mb-0">
+  This copy of the app still uses the old address fields. Update the code and database:
+  run <code>git pull origin main</code>, then <code>python manage.py migrate common</code>, then restart the server.
+</div>
+{% endif %}
