@@ -5,6 +5,7 @@ from .models import (
     AppointmentHistory,
     CivilEducation,
     CivilEducationLevel,
+    EREOrganization,
     Family,
     MedicalCategory,
     MobileNumber,
@@ -18,6 +19,7 @@ from .models import (
 class ServiceHistoryInline(admin.TabularInline):
     model = ServiceHistory
     extra = 0
+    fields = ("rank", "trade", "organization", "start_date", "end_date")
 
 
 class CivilEducationInline(admin.TabularInline):
@@ -48,6 +50,7 @@ class MobileNumberInline(admin.TabularInline):
 class FamilyInline(admin.TabularInline):
     model = Family
     extra = 0
+    fields = ("relation", "name", "mobile_number", "occupation", "remarks")
 
 
 @admin.register(Rank)
@@ -60,12 +63,19 @@ class RankAdmin(admin.ModelAdmin):
 @admin.register(Organization)
 class OrganizationAdmin(admin.ModelAdmin):
     search_fields = ("organization_name",)
-<<<<<<< HEAD
     list_display = ("organization_name", "parent_organization", "unit_kind")
     list_filter = ("unit_kind",)
-=======
-    list_display = ("organization_name", "parent_organization")
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
+
+
+@admin.register(EREOrganization)
+class EREOrganizationAdmin(admin.ModelAdmin):
+    search_fields = ("name",)
+    list_display = ("name", "organization")
+    fields = ("name",)
+    readonly_fields = ("organization",)
+
+    def save_model(self, request, obj, form, change):
+        obj.save()
 
 
 @admin.register(CivilEducationLevel)
@@ -75,9 +85,25 @@ class CivilEducationLevelAdmin(admin.ModelAdmin):
 
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
-    list_display = ("army_number", "name", "rank", "organization", "batch", "mission", "qualification_for_next_rank")
+    list_display = (
+        "army_number",
+        "name",
+        "rank",
+        "organization",
+        "batch",
+        "on_strength",
+        "mission",
+        "qualification_for_next_rank",
+    )
     search_fields = ("name", "army_number", "nid_number", "service_id_card_number", "mobile_numbers__mobile_number")
-    list_filter = ("rank", "organization", "batch", "mission", "qualification_for_next_rank")
+    list_filter = (
+        "rank",
+        "organization",
+        "batch",
+        "on_strength",
+        "mission",
+        "qualification_for_next_rank",
+    )
     autocomplete_fields = ("rank", "organization")
     readonly_fields = (
         "present_age", "present_service_years", "civil_education",
@@ -91,7 +117,7 @@ class PersonAdmin(admin.ModelAdmin):
         ("Conduct & posting", {"fields": ("discipline", "punishment", "mission")} ),
         ("Training-derived particulars", {"description": "These values are maintained in Training and are read-only here.", "fields": ("civil_education", "physical_efficiency", "army_courses", "cadres", "specialist_cadre")} ),
         ("Annual performance summary", {"description": "Manage individual APR entries using the inline below.", "fields": ("all_apr",)}),
-        ("Medical", {"fields": ("height", "overweight")} ),
+        ("Medical", {"fields": ("height_feet", "height_inches", "overweight")} ),
         ("Promotion", {"fields": ("qualification_for_next_rank", "reason_unqualified")} ),
         ("Previous Unit/Organizations", {"description": "Generated from Appointment History entries below.", "fields": ("previous_unit_organizations",)}),
         ("Identification & address", {"fields": ("nid_number", "birth_certificate_number", "phone_registration_nid", "phone_imei", "social_media_links", "passport_number", "passport_type", "service_id_card_number", "present_address", "permanent_address", "photo")} ),

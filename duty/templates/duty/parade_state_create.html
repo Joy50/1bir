@@ -1,0 +1,27 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}New Parade State · 1 BIR{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header">
+  <div class="section-eyebrow">A Matter · Parade State</div>
+  <h1>New parade state</h1>
+  <p class="text-secondary mb-0">Open a date and enter authorized, posted, and absent strength by company.</p>
+</div>
+<div class="card form-panel">
+  <div class="card-body p-4">
+    <form method="post" class="row g-3" novalidate>
+      {% csrf_token %}
+      <div class="col-md-4">
+        <label class="form-label" for="{{ form.report_date.id_for_label }}">{{ form.report_date.label }}</label>
+        {{ form.report_date }}
+        {% if form.report_date.errors %}<div class="text-danger small">{{ form.report_date.errors }}</div>{% endif %}
+      </div>
+      <div class="col-12">
+        <button class="btn btn-bir" type="submit">Open parade state</button>
+        <a class="btn btn-outline-secondary" href="{% url 'duty:parade_state_list' %}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

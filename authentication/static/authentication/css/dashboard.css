@@ -138,6 +138,103 @@ html {
   border: 1px solid rgba(201, 168, 76, 0.28);
   border-radius: var(--radius-pill);
 }
+.top-nav-search {
+  position: relative;
+  flex: 1 1 280px;
+  max-width: 520px;
+  min-width: 0;
+}
+.top-nav-search form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(201, 168, 76, 0.28);
+  border-radius: var(--radius-pill);
+  padding: 0.2rem 0.85rem;
+}
+.top-nav-search form:focus-within {
+  border-color: var(--gold);
+  background: rgba(255, 255, 255, 0.12);
+}
+.top-nav-search i {
+  color: var(--gold-light);
+  font-size: 0.9rem;
+}
+.top-nav-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 0.9rem;
+  padding: 0.35rem 0;
+  outline: none;
+}
+.top-nav-search input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+.top-nav-search-panel {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  right: 0;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  z-index: 50;
+  overflow: hidden;
+}
+.top-nav-search-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 0.65rem 0.9rem;
+  color: var(--text);
+  font-size: 0.88rem;
+}
+.top-nav-search-item:hover,
+.top-nav-search-item.is-active {
+  background: var(--primary-tint);
+}
+.top-nav-search-item small {
+  display: block;
+  color: var(--text-light);
+  font-size: 0.72rem;
+}
+.unit-search-page-box {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  background: #fff;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  padding: 0.35rem 0.45rem 0.35rem 1rem;
+}
+.unit-search-page-box i { color: var(--text-light); }
+.unit-search-page-box input {
+  flex: 1;
+  border: 0;
+  outline: none;
+  background: transparent;
+  min-width: 0;
+}
+.search-chip {
+  display: inline-block;
+  margin: 0.1rem 0.15rem 0.1rem 0;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-pill);
+  background: var(--gold-tint);
+  color: var(--text);
+  font-size: 0.78rem;
+}
+a.search-chip-link {
+  text-decoration: none;
+  border: 1px solid var(--line-gold);
+}
+a.search-chip-link:hover { background: var(--primary-tint); }
 .top-nav-btn {
   display: inline-flex;
   align-items: center;
@@ -376,6 +473,7 @@ html {
   .sidebar-open .sidebar-overlay { display: block; }
   .user-chip .user-meta { display: none; }
   .user-chip { padding: 0.2rem; }
+  .top-nav-search { max-width: none; flex-basis: 140px; }
 }
 
 /* -------------------------------------------------------------------- */

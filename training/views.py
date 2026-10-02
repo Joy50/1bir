@@ -13,17 +13,16 @@ from django.views.generic import FormView, ListView, TemplateView, View
 from authentication.views import PortalContextMixin
 from common.activity import log_change
 from common.models import MedicalCategory, Organization, Person, Rank, ServiceHistory
-<<<<<<< HEAD
 from common.http import safe_redirect_target
 from common.scoping import (
     collect_descendant_ids,
     descendant_ids_by_organization,
     get_accessible_companies,
     get_battalion,
+    get_board_organizations,
+    organization_lookup,
+    rollup_to_parade_organization,
 )
-=======
-from common.scoping import collect_descendant_ids
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 from common.views import SoldierAccessMixin
 
 from .forms import (
@@ -69,15 +68,66 @@ from .services import (
     attach_majcom,
     get_majcom_statistics,
     get_yearly_plan_statistics,
-<<<<<<< HEAD
     is_privilege_or_casual_slot,
     leave_board_url,
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 )
 
 
-class SoldierYearBoardMixin(SoldierAccessMixin):
+class CompanyBoardMixin(SoldierAccessMixin):
+
+    def get_board_organizations(self):
+        return get_board_organizations(self.request.user)
+
+    def get_selected_board_organization(self):
+        selected_id = self.request.GET.get("organization", "").strip()
+        if selected_id.isdigit():
+            return self.get_board_organizations().filter(pk=int(selected_id)).first()
+        return None
+
+    def soldiers_for_board_organization(self, organization):
+        return (
+            Person.objects.on_strength().filter(organization_id__in=collect_descendant_ids(organization))
+            .select_related("rank", "organization")
+            .order_by("rank__category", "army_number")
+        )
+
+    def soldier_ids_grouped_by_board(self, selected_organization=None):
+        if selected_organization:
+            org_ids = collect_descendant_ids(selected_organization)
+            groups = []
+            for label, category in (
+                ("Offr", Rank.CATEGORY_OFFICER),
+                ("JCO", Rank.CATEGORY_JCO),
+                ("OR", Rank.CATEGORY_OR),
+            ):
+                ids = list(
+                    Person.objects.on_strength().filter(
+                        organization_id__in=org_ids,
+                        rank__category=category,
+                    ).values_list("pk", flat=True)
+                )
+                groups.append((label, ids))
+            return groups
+
+        board_organizations = self.get_board_organizations()
+        orgs_by_id = organization_lookup()
+        grouped = {organization.pk: [] for organization in board_organizations}
+        allowed_ids = self.get_allowed_organization_ids()
+        soldiers = Person.objects.on_strength()
+        if allowed_ids is not None:
+            soldiers = soldiers.filter(organization_id__in=allowed_ids)
+        for soldier_id, organization_id in soldiers.values_list("pk", "organization_id"):
+            rolled = rollup_to_parade_organization(organization_id, orgs_by_id)
+            if rolled is not None and rolled.pk in grouped:
+                grouped[rolled.pk].append(soldier_id)
+        return [
+            (organization, grouped[organization.pk])
+            for organization in board_organizations
+            if organization.unit_kind != Organization.KIND_UNIT
+        ]
+
+
+class SoldierYearBoardMixin(CompanyBoardMixin):
 
     model = Person
     context_object_name = "soldiers"
@@ -98,7 +148,7 @@ class SoldierYearBoardMixin(SoldierAccessMixin):
             person_id=OuterRef("pk")
         ).order_by("-start_date", "-pk")
 
-        queryset = Person.objects.select_related(
+        queryset = Person.objects.on_strength().select_related(
             "rank",
             "organization",
         ).annotate(
@@ -117,7 +167,6 @@ class SoldierYearBoardMixin(SoldierAccessMixin):
         queryset = self.get_base_queryset()
         search = self.request.GET.get("q", "").strip()
         organization_id = self.request.GET.get("organization", "").strip()
-        allowed_ids = self.get_allowed_organization_ids()
 
         if search:
             queryset = queryset.filter(
@@ -126,9 +175,13 @@ class SoldierYearBoardMixin(SoldierAccessMixin):
             )
 
         if organization_id.isdigit():
-            org_id = int(organization_id)
-            if allowed_ids is None or org_id in allowed_ids:
-                queryset = queryset.filter(organization_id=org_id)
+            organization = self.get_board_organizations().filter(
+                pk=int(organization_id)
+            ).first()
+            if organization:
+                queryset = queryset.filter(
+                    organization_id__in=collect_descendant_ids(organization)
+                )
 
         return queryset
 
@@ -146,7 +199,7 @@ class SoldierYearBoardMixin(SoldierAccessMixin):
     def get_board_context(self, context):
         year = self.get_selected_year()
         soldiers = list(context["soldiers"])
-        allowed_orgs = self.get_allowed_organizations()
+        board_orgs = self.get_board_organizations()
 
         context["soldiers"] = soldiers
         context["selected_year"] = year
@@ -156,21 +209,21 @@ class SoldierYearBoardMixin(SoldierAccessMixin):
             "organization",
             "",
         ).strip()
-        context["organizations"] = allowed_orgs
-        context["has_company"] = allowed_orgs.exists()
+        context["organizations"] = board_orgs
+        context["has_company"] = board_orgs.exists()
         return soldiers, year, context
 
     def get_filter_context(self, context):
         soldiers = list(context["soldiers"])
-        allowed_orgs = self.get_allowed_organizations()
+        board_orgs = self.get_board_organizations()
         context["soldiers"] = soldiers
         context["search_query"] = self.request.GET.get("q", "").strip()
         context["organization_filter"] = self.request.GET.get(
             "organization",
             "",
         ).strip()
-        context["organizations"] = allowed_orgs
-        context["has_company"] = allowed_orgs.exists()
+        context["organizations"] = board_orgs
+        context["has_company"] = board_orgs.exists()
         return soldiers, context
 
 
@@ -182,7 +235,7 @@ class SoldierYearEditMixin(SoldierAccessMixin):
         return super().dispatch(request, *args, **kwargs)
 
     def get_soldier(self):
-        queryset = Person.objects.select_related("rank", "organization")
+        queryset = Person.objects.on_strength().select_related("rank", "organization")
         allowed_ids = self.get_allowed_organization_ids()
 
         if allowed_ids is not None:
@@ -228,7 +281,6 @@ class YearlyPlanListView(SoldierAccessMixin, TemplateView):
         organizations = self.get_allowed_organizations()
         return organizations.filter(pk=int(value)).first()
 
-<<<<<<< HEAD
     def get_plan_organization(self):
         return self.get_selected_organization() or get_battalion(self.request.user)
 
@@ -243,23 +295,13 @@ class YearlyPlanListView(SoldierAccessMixin, TemplateView):
     def ensure_rows(self, year, organization):
         if organization is None:
             return UnitTrainingCyclePlan.objects.none()
-=======
-    def get_rows(self, year, organization):
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         for cycle, _label in UnitTrainingCyclePlan.CYCLE_CHOICES:
             UnitTrainingCyclePlan.objects.get_or_create(
                 year=year,
                 cycle=cycle,
                 organization=organization,
             )
-<<<<<<< HEAD
         return self.get_rows(year, organization)
-=======
-        return UnitTrainingCyclePlan.objects.filter(
-            year=year,
-            organization=organization,
-        ).order_by("cycle")
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
     def get_formset(self, year, organization):
         kwargs = {
@@ -278,18 +320,14 @@ class YearlyPlanListView(SoldierAccessMixin, TemplateView):
         stored_years = UnitTrainingCyclePlan.objects.values_list("year", flat=True)
         context["selected_year"] = year
         context["selected_organization"] = organization
-<<<<<<< HEAD
         context["organizations"] = get_accessible_companies(self.request.user)
-=======
-        context["organizations"] = self.get_allowed_organizations()
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         context["year_choices"] = sorted(
             set(range(current_year - 2, current_year + 3)) | set(stored_years),
             reverse=True,
         )
         if organization:
             soldiers = list(
-                Person.objects.filter(organization=organization)
+                Person.objects.on_strength().filter(organization=organization)
                 .select_related("rank", "organization")
                 .order_by("army_number")
             )
@@ -299,11 +337,7 @@ class YearlyPlanListView(SoldierAccessMixin, TemplateView):
                 item.solider_id: item
                 for item in IndividualQual.objects.filter(
                     solider_id__in=[soldier.pk for soldier in soldiers],
-<<<<<<< HEAD
                     year=year,
-=======
-                    year=str(year),
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
                 ).prefetch_related(
                     "courses__course_name__level",
                 )
@@ -345,7 +379,6 @@ class YearlyPlanListView(SoldierAccessMixin, TemplateView):
                 soldier.individual_qualification = qualification
             context["company_soldiers"] = soldiers
         else:
-<<<<<<< HEAD
             plan_org = self.get_plan_organization()
             context["rows"] = self.get_rows(year, plan_org)
         context["edit_mode"] = self.request.GET.get("edit") == "1"
@@ -353,20 +386,12 @@ class YearlyPlanListView(SoldierAccessMixin, TemplateView):
             plan_org = self.get_plan_organization()
             context["formset"] = kwargs.get("formset") or self.get_formset(
                 year, plan_org
-=======
-            context["rows"] = self.get_rows(year, organization)
-        context["edit_mode"] = self.request.GET.get("edit") == "1"
-        if not organization:
-            context["formset"] = kwargs.get("formset") or self.get_formset(
-                year, organization
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
             )
         return context
 
     def post(self, request, *args, **kwargs):
         year = self.get_selected_year()
         organization = self.get_selected_organization()
-<<<<<<< HEAD
         plan_org = organization or self.get_plan_organization()
         if request.POST.get("prepare"):
             self.ensure_rows(year, plan_org)
@@ -381,13 +406,6 @@ class YearlyPlanListView(SoldierAccessMixin, TemplateView):
             with transaction.atomic():
                 formset.save()
             messages.success(request, f"Training plan for {year} saved.")
-=======
-        formset = self.get_formset(year, organization)
-        if formset.is_valid():
-            with transaction.atomic():
-                formset.save()
-            messages.success(request, f"1 BIR training plan for {year} saved.")
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
             organization_query = (
                 f"&organization={organization.pk}" if organization else ""
             )
@@ -550,7 +568,7 @@ class SoldierGMatterView(SoldierAccessMixin, TemplateView):
     template_name = "training/soldier_g_matter.html"
 
     def dispatch(self, request, *args, **kwargs):
-        queryset = Person.objects.select_related("rank", "organization")
+        queryset = Person.objects.on_strength().select_related("rank", "organization")
         allowed_ids = self.get_allowed_organization_ids()
         if allowed_ids is not None:
             queryset = queryset.filter(organization_id__in=allowed_ids)
@@ -562,13 +580,9 @@ class SoldierGMatterView(SoldierAccessMixin, TemplateView):
         year = timezone.localdate().year
         links = (
             ("Yearly Career Plan", "Plan all four annual training cycles.", "training:yearly_plan_edit", True),
-<<<<<<< HEAD
             ("Military Courses & Qualifications", "Enter PE, specialist qualifications, course levels, names, and results.", "training:qual_edit", True),
-=======
-            ("Military Courses & Qualifications", "Enter PE, specialist qualifications, course levels, names, and results.", "training:qual_edit", False),
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
             ("Major Commitments", "Record GP Trg, ST, WT, FI, IHWF, and FF.", "training:majcom_edit", True),
-            ("Training & Sports", "Record training participation, sports, cycle, and achievement.", "training:sports_edit", False),
+            ("Training & Sports", "Record competitions and medal achievements.", "training:sports_edit", False),
             ("IPFT", "Maintain biannual IPFT attempts and results.", "training:ipft_edit", False),
             ("GP Firing", "Maintain GP firing practices.", "training:gp_firing_edit", False),
             ("SOSN Firing", "Maintain SOSN firing details.", "training:sosn_firing_edit", False),
@@ -601,7 +615,7 @@ class RelatedFormsetUpdateView(SoldierAccessMixin, TemplateView):
     section_title = ""
 
     def dispatch(self, request, *args, **kwargs):
-        queryset = Person.objects.select_related("rank", "organization")
+        queryset = Person.objects.on_strength().select_related("rank", "organization")
         allowed_ids = self.get_allowed_organization_ids()
         if allowed_ids is not None:
             queryset = queryset.filter(organization_id__in=allowed_ids)
@@ -656,11 +670,9 @@ class SportsListView(SoldierYearBoardMixin, ListView):
         for soldier in soldiers:
             records = list(soldier.sports_trainings.all())
             soldier.sports_records = records[:3]
-            soldier.sports_count = sum(
-                1 for row in records if row.type_of_comp == "sports"
-            )
-            soldier.training_count = sum(
-                1 for row in records if row.type_of_comp == "training"
+            soldier.sports_count = len(records)
+            soldier.achievement_count = sum(
+                1 for row in records if row.significant_achievement
             )
 
         total = self.get_base_queryset().count()
@@ -668,8 +680,8 @@ class SportsListView(SoldierYearBoardMixin, ListView):
         context["stats"] = {
             "total": total,
             "recorded": recorded,
-            "sports": today_records.filter(type_of_comp="sports").count(),
-            "training": today_records.filter(type_of_comp="training").count(),
+            "competitions": today_records.count(),
+            "achievements": today_records.exclude(significant_achievement="").count(),
         }
         return context
 
@@ -691,16 +703,7 @@ class LeaveListView(SoldierYearBoardMixin, ListView):
     paginate_by = None
 
     def get_companies(self):
-<<<<<<< HEAD
         return get_accessible_companies(self.request.user)
-=======
-        return self.get_allowed_organizations().filter(
-            parent_organization__organization_name="1 BIR",
-            organization_name__in=[
-                "A Company", "B Company", "C Company", "D Company", "HQ Company",
-            ],
-        ).order_by("organization_name")
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
     def get_selected_company(self):
         value = self.request.GET.get("company", "")
@@ -783,7 +786,6 @@ class LeaveListView(SoldierYearBoardMixin, ListView):
                 and row.slot
             }
             p_leave = approved_slots.get(LeaveState.SLOT_P_LEAVE)
-<<<<<<< HEAD
             casual_by_number = {}
             for row in approved_slots.values():
                 number = LeaveState.casual_slot_number(row.slot)
@@ -795,22 +797,6 @@ class LeaveListView(SoldierYearBoardMixin, ListView):
             soldier.c_leave_days = sum(
                 row.no_days or 0 for row in approved_slots.values()
                 if LeaveState.is_casual_slot(row.slot)
-=======
-            c1_leave = approved_slots.get(LeaveState.SLOT_C_LEAVE_1)
-            other_casual = [
-                approved_slots.get(slot) for slot in (
-                    LeaveState.SLOT_C_LEAVE_2, LeaveState.SLOT_C_LEAVE_3,
-                    LeaveState.SLOT_C_LEAVE_4, LeaveState.SLOT_C_LEAVE_5,
-                ) if approved_slots.get(slot)
-            ]
-            soldier.p_leave = p_leave
-            soldier.c1_leave = c1_leave
-            soldier.other_casual = other_casual
-            soldier.p_leave_days = p_leave.no_days if p_leave else 0
-            soldier.c_leave_days = sum(
-                row.no_days or 0 for row in approved_slots.values()
-                if row.slot.startswith("C lve")
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
             )
             soldier.combined_leave_days = soldier.p_leave_days + soldier.c_leave_days
             soldier.platoon_name = (
@@ -818,7 +804,6 @@ class LeaveListView(SoldierYearBoardMixin, ListView):
                 else soldier.organization.organization_name
             )
 
-<<<<<<< HEAD
         max_casual = 1
         for soldier in soldiers:
             if soldier.casual_by_number:
@@ -834,12 +819,6 @@ class LeaveListView(SoldierYearBoardMixin, ListView):
         for company in companies:
             person_ids = list(self.get_base_queryset().filter(
                 organization_id__in=company_descendants.get(company.pk, {company.pk})
-=======
-        summary_rows = []
-        for company in companies:
-            person_ids = list(self.get_base_queryset().filter(
-                organization_id__in=collect_descendant_ids(company)
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
             ).values_list("pk", flat=True))
             completed = LeaveState.objects.filter(
                 solider_id__in=person_ids,
@@ -857,16 +836,10 @@ class LeaveListView(SoldierYearBoardMixin, ListView):
         platoon_rows = []
         if selected_company:
             children = list(selected_company.child_organizations.all().order_by("organization_name"))
-<<<<<<< HEAD
             platoon_descendants = descendant_ids_by_organization(children)
             for platoon in children:
                 platoon_ids = list(self.get_base_queryset().filter(
                     organization_id__in=platoon_descendants.get(platoon.pk, {platoon.pk})
-=======
-            for platoon in children:
-                platoon_ids = list(self.get_base_queryset().filter(
-                    organization_id__in=collect_descendant_ids(platoon)
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
                 ).values_list("pk", flat=True))
                 if platoon.organization_name == "Coy HQ":
                     platoon_ids += list(self.get_base_queryset().filter(
@@ -904,25 +877,19 @@ class LeaveListView(SoldierYearBoardMixin, ListView):
                 "completed": sum(row["completed"] for row in platoon_rows),
                 "remaining": sum(row["remaining"] for row in platoon_rows),
             },
-<<<<<<< HEAD
             "casual_column_numbers": casual_column_numbers,
             "casual_colspan": len(casual_column_numbers) * 2,
             "individual_colspan": 12 + len(casual_column_numbers) * 2,
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         })
         total = self.get_base_queryset().count()
         on_leave = current_leaves.values("solider_id").distinct().count()
         pending = scoped_leaves.filter(
             status=LeaveState.STATUS_PENDING
         )
-<<<<<<< HEAD
         if selected_company:
             pending = pending.filter(
                 solider__organization_id__in=collect_descendant_ids(selected_company)
             )
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         context["pending_applications"] = pending.select_related(
             "solider",
             "solider__rank",
@@ -930,13 +897,8 @@ class LeaveListView(SoldierYearBoardMixin, ListView):
             "leave_type",
             "applied_by",
         ).order_by("from_date", "pk")
-<<<<<<< HEAD
         context["can_apply"] = self.request.user.can_apply_leave
         context["can_approve"] = self.request.user.can_approve_leave
-=======
-        context["can_apply"] = self.request.user.is_clerk
-        context["can_approve"] = self.request.user.is_officer
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         context["stats"] = {
             "total": total,
             "on_leave": on_leave,
@@ -952,15 +914,11 @@ class LeaveManageView(SoldierAccessMixin, FormView):
     template_name = "training/leave_manage.html"
 
     def dispatch(self, request, *args, **kwargs):
-<<<<<<< HEAD
-        queryset = Person.objects.select_related(
+        queryset = Person.objects.on_strength().select_related(
             "rank",
             "organization",
             "organization__parent_organization",
         )
-=======
-        queryset = Person.objects.select_related("rank", "organization")
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         allowed_ids = self.get_allowed_organization_ids()
         if allowed_ids is not None:
             queryset = queryset.filter(organization_id__in=allowed_ids)
@@ -971,10 +929,7 @@ class LeaveManageView(SoldierAccessMixin, FormView):
         kwargs = super().get_form_kwargs()
         kwargs.pop("organization_queryset", None)
         kwargs["soldier"] = self.soldier
-<<<<<<< HEAD
         kwargs["applicant"] = self.request.user
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         return kwargs
 
     def get_context_data(self, **kwargs):
@@ -985,7 +940,6 @@ class LeaveManageView(SoldierAccessMixin, FormView):
             "applied_by",
             "approved_by",
         )
-<<<<<<< HEAD
         context["can_apply"] = self.request.user.can_apply_leave
         context["can_approve"] = self.request.user.can_approve_leave
         context["leave_board_url"] = leave_board_url(self.soldier)
@@ -994,15 +948,6 @@ class LeaveManageView(SoldierAccessMixin, FormView):
     def post(self, request, *args, **kwargs):
         if not request.user.can_apply_leave:
             messages.error(request, "You do not have permission to apply for leave.")
-=======
-        context["can_apply"] = self.request.user.is_clerk
-        context["can_approve"] = self.request.user.is_officer
-        return context
-
-    def post(self, request, *args, **kwargs):
-        if not request.user.is_clerk:
-            messages.error(request, "Only clerks can apply for leave.")
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
             return redirect("training:leave_manage", pk=self.soldier.pk)
         return super().post(request, *args, **kwargs)
 
@@ -1022,38 +967,25 @@ class LeaveManageView(SoldierAccessMixin, FormView):
         )
         messages.success(
             self.request,
-<<<<<<< HEAD
             f"Leave request for {self.soldier.name} submitted. "
             "A company officer or the CO can approve it on Leave State.",
         )
         if is_privilege_or_casual_slot(leave.slot):
             return redirect(leave_board_url(self.soldier, leave.from_date.year))
-=======
-            f"Leave request for {self.soldier.name} submitted for officer approval.",
-        )
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         return redirect("training:leave_manage", pk=self.soldier.pk)
 
 
 class LeaveDecisionView(SoldierAccessMixin, View):
 
     def post(self, request, *args, **kwargs):
-<<<<<<< HEAD
         if not request.user.can_approve_leave:
             messages.error(request, "You do not have permission to approve or reject leave.")
-=======
-        if not request.user.is_officer:
-            messages.error(request, "Only officers can approve or reject leave.")
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
             return redirect("training:leave_list")
 
         queryset = LeaveState.objects.select_related(
             "solider",
-<<<<<<< HEAD
             "solider__organization",
             "solider__organization__parent_organization",
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
             "leave_type",
         )
         allowed_ids = self.get_allowed_organization_ids()
@@ -1094,27 +1026,16 @@ class LeaveDecisionView(SoldierAccessMixin, View):
 
         log_change(request.user, leave.solider, message)
         messages.success(request, message)
-<<<<<<< HEAD
         fallback = reverse("training:leave_manage", kwargs={"pk": leave.solider_id})
         if is_privilege_or_casual_slot(leave.slot):
             fallback = leave_board_url(leave.solider, leave.from_date.year)
         return redirect(safe_redirect_target(request, fallback))
-=======
-        next_url = request.POST.get("next") or reverse(
-            "training:leave_manage",
-            kwargs={"pk": leave.solider_id},
-        )
-        return redirect(next_url)
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
 
 class QualListView(SoldierYearBoardMixin, ListView):
 
     template_name = "training/qual_list.html"
-<<<<<<< HEAD
     year_source_model = IndividualQual
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
     def get_queryset(self):
         return super().get_queryset().prefetch_related(
@@ -1123,7 +1044,6 @@ class QualListView(SoldierYearBoardMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-<<<<<<< HEAD
         soldiers, year, context = self.get_board_context(context)
         quals = IndividualQual.objects.filter(
             solider__in=self.get_base_queryset(),
@@ -1134,15 +1054,6 @@ class QualListView(SoldierYearBoardMixin, ListView):
             records = [
                 item for item in soldier.qualifications.all() if item.year == year
             ]
-=======
-        soldiers, context = self.get_filter_context(context)
-        quals = IndividualQual.objects.filter(
-            solider__in=self.get_base_queryset()
-        )
-
-        for soldier in soldiers:
-            records = list(soldier.qualifications.all())
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
             header = records[0] if records else None
             courses = list(header.courses.all()) if header else []
             soldier.qualification = header
@@ -1162,12 +1073,8 @@ class QualListView(SoldierYearBoardMixin, ListView):
             "total": total,
             "recorded": recorded,
             "qualifications": IndividualQualCourse.objects.filter(
-<<<<<<< HEAD
                 qualification__solider__in=self.get_base_queryset(),
                 qualification__year=year,
-=======
-                qualification__solider__in=self.get_base_queryset()
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
             ).count(),
             "next_promo": quals.filter(
                 qual_for_next_promotion=True
@@ -1181,12 +1088,11 @@ class QualUpdateView(SoldierAccessMixin, TemplateView):
     template_name = "training/qual_form.html"
 
     def dispatch(self, request, *args, **kwargs):
-        queryset = Person.objects.select_related("rank", "organization")
+        queryset = Person.objects.on_strength().select_related("rank", "organization")
         allowed_ids = self.get_allowed_organization_ids()
         if allowed_ids is not None:
             queryset = queryset.filter(organization_id__in=allowed_ids)
         self.soldier = get_object_or_404(queryset, pk=self.kwargs["pk"])
-<<<<<<< HEAD
         year = self.request.GET.get("year") or self.request.POST.get("year", "")
         year = str(year).strip()
         current_year = timezone.localdate().year
@@ -1199,15 +1105,6 @@ class QualUpdateView(SoldierAccessMixin, TemplateView):
             self.qualification = IndividualQual(
                 solider=self.soldier,
                 year=self.year,
-=======
-        self.qualification = IndividualQual.objects.filter(
-            solider=self.soldier
-        ).order_by("-year", "-pk").first()
-        if self.qualification is None:
-            self.qualification = IndividualQual(
-                solider=self.soldier,
-                year=str(timezone.localdate().year),
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
             )
         return super().dispatch(request, *args, **kwargs)
 
@@ -1230,17 +1127,22 @@ class QualUpdateView(SoldierAccessMixin, TemplateView):
         data = {}
         for course in IndividualCourseName.objects.select_related("level"):
             data.setdefault(str(course.level_id), []).append(
-                {"id": course.pk, "name": course.name}
+                {
+                    "id": course.pk,
+                    "name": course.name,
+                    "result_kind": (
+                        "cadre"
+                        if "cadre" in course.level.name.lower()
+                        else "course"
+                    ),
+                }
             )
         return data
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["soldier"] = self.soldier
-<<<<<<< HEAD
         context["selected_year"] = self.year
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         context["form"] = kwargs.get("form") or self.get_form()
         context["formset"] = kwargs.get("formset") or self.get_formset()
         context["courses_by_level"] = self.get_courses_by_level()
@@ -1266,17 +1168,13 @@ class QualUpdateView(SoldierAccessMixin, TemplateView):
                 request,
                 f"Qualifications for {self.soldier.name} saved.",
             )
-<<<<<<< HEAD
             return redirect(f"{reverse('training:qual_list')}?year={self.year}")
-=======
-            return redirect("training:qual_list")
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         return self.render_to_response(
             self.get_context_data(form=form, formset=formset)
         )
 
 
-class IPFTListView(SoldierAccessMixin, TemplateView):
+class IPFTListView(CompanyBoardMixin, TemplateView):
 
     template_name = "training/ipft_list.html"
 
@@ -1292,13 +1190,9 @@ class IPFTListView(SoldierAccessMixin, TemplateView):
         test_type = self.request.GET.get("type", IPFT.TYPE_FIRST_BIANNUAL)
         if test_type not in dict(IPFT.TYPE_CHOICES):
             test_type = IPFT.TYPE_FIRST_BIANNUAL
-        allowed_organizations = self.get_allowed_organizations()
+        board_organizations = self.get_board_organizations()
         selected_id = self.request.GET.get("organization", "").strip()
-        selected_organization = None
-        if selected_id.isdigit():
-            selected_organization = allowed_organizations.filter(
-                pk=int(selected_id)
-            ).first()
+        selected_organization = self.get_selected_board_organization()
 
         start_of_year = date(year, 1, 1)
         end_of_year = date(year, 12, 31)
@@ -1338,24 +1232,12 @@ class IPFTListView(SoldierAccessMixin, TemplateView):
                 "percentage": round(len(passed_ids) * 100 / len(attended_ids), 1) if attended_ids else 0,
             }
 
-        if selected_organization:
-            category_rows = (
-                ("Offr", Rank.CATEGORY_OFFICER),
-                ("JCO", Rank.CATEGORY_JCO),
-                ("OR", Rank.CATEGORY_OR),
-            )
-            for label, category in category_rows:
-                soldier_ids = Person.objects.filter(
-                    organization=selected_organization,
-                    rank__category=category,
-                ).values_list("pk", flat=True)
-                summary_rows.append(build_summary_row(label, soldier_ids))
+        groups = self.soldier_ids_grouped_by_board(selected_organization)
+        for label, soldier_ids in groups:
+            summary_rows.append(build_summary_row(label, soldier_ids))
 
-            company_soldiers = list(
-                Person.objects.filter(organization=selected_organization)
-                .select_related("rank", "organization")
-                .order_by("rank__category", "army_number")
-            )
+        if selected_organization:
+            company_soldiers = list(self.soldiers_for_board_organization(selected_organization))
             company_ids = [soldier.pk for soldier in company_soldiers]
             active_exempted = set(
                 MedicalCategory.objects.filter(
@@ -1376,12 +1258,6 @@ class IPFTListView(SoldierAccessMixin, TemplateView):
                 soldier.summary_ipft = latest_records.get(soldier.pk)
                 soldier.ipft_exempted = soldier.pk in active_exempted
             context["individual_soldiers"] = company_soldiers
-        else:
-            for organization in allowed_organizations:
-                soldier_ids = Person.objects.filter(
-                    organization=organization
-                ).values_list("pk", flat=True)
-                summary_rows.append(build_summary_row(organization, soldier_ids))
 
         for row in summary_rows:
             for key in total:
@@ -1392,7 +1268,7 @@ class IPFTListView(SoldierAccessMixin, TemplateView):
         context.update({
             "summary_rows": summary_rows,
             "summary_total": total,
-            "organizations": self.get_allowed_organizations(),
+            "organizations": board_organizations,
             "organization_filter": selected_id,
             "selected_organization": selected_organization,
             "selected_year": year,
@@ -1414,7 +1290,7 @@ class IPFTUpdateView(RelatedFormsetUpdateView):
     section_title = "IPFT"
 
 
-class RETHomeView(SoldierAccessMixin, TemplateView):
+class RETHomeView(CompanyBoardMixin, TemplateView):
 
     template_name = "training/ret_home.html"
 
@@ -1422,12 +1298,9 @@ class RETHomeView(SoldierAccessMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         year_value = self.request.GET.get("year", "").strip()
         year = int(year_value) if year_value.isdigit() else timezone.localdate().year
-        allowed_organizations = self.get_allowed_organizations()
+        board_organizations = self.get_board_organizations()
         selected_id = self.request.GET.get("organization", "").strip()
-        selected_organization = (
-            allowed_organizations.filter(pk=int(selected_id)).first()
-            if selected_id.isdigit() else None
-        )
+        selected_organization = self.get_selected_board_organization()
         start_of_year = date(year, 1, 1)
         end_of_year = date(year, 12, 31)
 
@@ -1476,16 +1349,7 @@ class RETHomeView(SoldierAccessMixin, TemplateView):
                 ),
             }
 
-        groups = []
-        if selected_organization:
-            for label, category in (("Offr", Rank.CATEGORY_OFFICER), ("JCO", Rank.CATEGORY_JCO), ("OR", Rank.CATEGORY_OR)):
-                ids = Person.objects.filter(organization=selected_organization, rank__category=category).values_list("pk", flat=True)
-                groups.append((label, ids))
-        else:
-            for organization in allowed_organizations:
-                ids = Person.objects.filter(organization=organization).values_list("pk", flat=True)
-                groups.append((organization, ids))
-
+        groups = self.soldier_ids_grouped_by_board(selected_organization)
         classification_rows = [summary_row(label, ids) for label, ids in groups]
         grenade_rows = [summary_row(label, ids, grenade=True) for label, ids in groups]
 
@@ -1499,7 +1363,7 @@ class RETHomeView(SoldierAccessMixin, TemplateView):
             return result
 
         if selected_organization:
-            soldiers = list(Person.objects.filter(organization=selected_organization).select_related("rank").order_by("rank__category", "army_number"))
+            soldiers = list(self.soldiers_for_board_organization(selected_organization))
             for soldier in soldiers:
                 classification = []
                 for model in (GPFiring, SOSNFiring, CASTrophy):
@@ -1515,7 +1379,7 @@ class RETHomeView(SoldierAccessMixin, TemplateView):
             "section_title": "RET State",
             "selected_year": year,
             "year_choices": range(current_year + 1, current_year - 3, -1),
-            "organizations": allowed_organizations,
+            "organizations": board_organizations,
             "organization_filter": selected_id,
             "selected_organization": selected_organization,
             "classification_rows": classification_rows,
@@ -1761,7 +1625,7 @@ class MarchCourseHomeView(PortalContextMixin, LoginRequiredMixin, TemplateView):
         return context
 
 
-class SpeedMarchListView(SoldierAccessMixin, TemplateView):
+class SpeedMarchListView(CompanyBoardMixin, TemplateView):
 
     template_name = "training/speed_march_list.html"
     summary_attempts = ("Prac-1", "Prac-2", "Prac-3", "Prac-4")
@@ -1770,12 +1634,9 @@ class SpeedMarchListView(SoldierAccessMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         year_value = self.request.GET.get("year", "").strip()
         year = int(year_value) if year_value.isdigit() else timezone.localdate().year
-        allowed_organizations = self.get_allowed_organizations()
+        board_organizations = self.get_board_organizations()
         selected_id = self.request.GET.get("organization", "").strip()
-        selected_organization = (
-            allowed_organizations.filter(pk=int(selected_id)).first()
-            if selected_id.isdigit() else None
-        )
+        selected_organization = self.get_selected_board_organization()
         start_of_year, end_of_year = date(year, 1, 1), date(year, 12, 31)
 
         def summary_row(label, soldier_ids):
@@ -1803,15 +1664,7 @@ class SpeedMarchListView(SoldierAccessMixin, TemplateView):
                 "attempts": attempts,
             }
 
-        groups = []
-        if selected_organization:
-            for label, category in (("Offr", Rank.CATEGORY_OFFICER), ("JCO", Rank.CATEGORY_JCO), ("OR", Rank.CATEGORY_OR)):
-                ids = Person.objects.filter(organization=selected_organization, rank__category=category).values_list("pk", flat=True)
-                groups.append((label, ids))
-        else:
-            for organization in allowed_organizations:
-                ids = Person.objects.filter(organization=organization).values_list("pk", flat=True)
-                groups.append((organization, ids))
+        groups = self.soldier_ids_grouped_by_board(selected_organization)
         rows = [summary_row(label, ids) for label, ids in groups]
         total = {
             key: sum(row[key] for row in rows)
@@ -1820,7 +1673,7 @@ class SpeedMarchListView(SoldierAccessMixin, TemplateView):
         total["attempts"] = [sum(row["attempts"][index] for row in rows) for index in range(4)]
 
         if selected_organization:
-            soldiers = list(Person.objects.filter(organization=selected_organization).select_related("rank").order_by("rank__category", "army_number"))
+            soldiers = list(self.soldiers_for_board_organization(selected_organization))
             records_by_soldier = {}
             for record in SpeedMarch.objects.filter(
                 solider_id__in=[soldier.pk for soldier in soldiers],
@@ -1838,14 +1691,14 @@ class SpeedMarchListView(SoldierAccessMixin, TemplateView):
             "rows": rows, "total": total,
             "selected_year": year,
             "year_choices": range(current_year + 1, current_year - 3, -1),
-            "organizations": allowed_organizations,
+            "organizations": board_organizations,
             "organization_filter": selected_id,
             "selected_organization": selected_organization,
         })
         return context
 
 
-class AssaultCourseListView(SoldierAccessMixin, TemplateView):
+class AssaultCourseListView(CompanyBoardMixin, TemplateView):
 
     template_name = "training/assault_course_list.html"
 
@@ -1853,12 +1706,9 @@ class AssaultCourseListView(SoldierAccessMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         year_value = self.request.GET.get("year", "").strip()
         year = int(year_value) if year_value.isdigit() else timezone.localdate().year
-        allowed_organizations = self.get_allowed_organizations()
+        board_organizations = self.get_board_organizations()
         selected_id = self.request.GET.get("organization", "").strip()
-        selected_organization = (
-            allowed_organizations.filter(pk=int(selected_id)).first()
-            if selected_id.isdigit() else None
-        )
+        selected_organization = self.get_selected_board_organization()
         start_of_year, end_of_year = date(year, 1, 1), date(year, 12, 31)
 
         def summary_row(label, soldier_ids):
@@ -1882,15 +1732,7 @@ class AssaultCourseListView(SoldierAccessMixin, TemplateView):
                 "not_attended": max(len(eligible) - len(attended), 0),
             }
 
-        groups = []
-        if selected_organization:
-            for label, category in (("Offr", Rank.CATEGORY_OFFICER), ("JCO", Rank.CATEGORY_JCO), ("OR", Rank.CATEGORY_OR)):
-                ids = Person.objects.filter(organization=selected_organization, rank__category=category).values_list("pk", flat=True)
-                groups.append((label, ids))
-        else:
-            for organization in allowed_organizations:
-                ids = Person.objects.filter(organization=organization).values_list("pk", flat=True)
-                groups.append((organization, ids))
+        groups = self.soldier_ids_grouped_by_board(selected_organization)
         rows = [summary_row(label, ids) for label, ids in groups]
         total = {
             key: sum(row[key] for row in rows)
@@ -1898,7 +1740,7 @@ class AssaultCourseListView(SoldierAccessMixin, TemplateView):
         }
 
         if selected_organization:
-            soldiers = list(Person.objects.filter(organization=selected_organization).select_related("rank").order_by("rank__category", "army_number"))
+            soldiers = list(self.soldiers_for_board_organization(selected_organization))
             latest = {}
             for record in AssaultCourse.objects.filter(
                 solider_id__in=[soldier.pk for soldier in soldiers],
@@ -1913,7 +1755,7 @@ class AssaultCourseListView(SoldierAccessMixin, TemplateView):
         context.update({
             "rows": rows, "total": total, "selected_year": year,
             "year_choices": range(current_year + 1, current_year - 3, -1),
-            "organizations": allowed_organizations,
+            "organizations": board_organizations,
             "organization_filter": selected_id,
             "selected_organization": selected_organization,
         })

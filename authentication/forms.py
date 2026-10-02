@@ -5,7 +5,6 @@ from django.contrib.auth.forms import (
 )
 from django.contrib.auth.password_validation import validate_password
 
-<<<<<<< HEAD
 from common.forms import StyledModelForm
 from common.models import Organization, Rank
 
@@ -17,11 +16,6 @@ from .models import (
     UnitProfile,
     User,
 )
-=======
-from common.models import Organization, Rank
-
-from .models import User
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
 
 # ============================================================
@@ -189,7 +183,7 @@ class UserCreateForm(forms.ModelForm):
 
         labels = {
             "name": "Full Name",
-            "organizations": "Organizations",
+            "organizations": "Access organizations",
             "sign": "Signature",
             "photo": "Photo",
             "is_active": "Active",
@@ -207,7 +201,8 @@ class UserCreateForm(forms.ModelForm):
         )
         self.fields["organizations"].required = False
         self.fields["organizations"].help_text = (
-            "A user can belong to more than one organization."
+            "Organizations control what this login can see, not where a soldier is posted. "
+            "Assign the Unit to see the whole unit, or a company to see that company and below."
         )
         self.fields["is_active"].initial = True
 
@@ -344,7 +339,7 @@ class UserUpdateForm(forms.ModelForm):
 
         labels = {
             "name": "Full Name",
-            "organizations": "Organizations",
+            "organizations": "Access organizations",
             "sign": "Signature",
             "photo": "Photo",
             "is_active": "Active",
@@ -362,7 +357,8 @@ class UserUpdateForm(forms.ModelForm):
         )
         self.fields["organizations"].required = False
         self.fields["organizations"].help_text = (
-            "A user can belong to more than one organization."
+            "Organizations control what this login can see, not where a soldier is posted. "
+            "Assign the Unit to see the whole unit, or a company to see that company and below."
         )
         self.fields["password"].help_text = (
             "Leave blank to keep the current password."
@@ -400,7 +396,6 @@ class UserUpdateForm(forms.ModelForm):
             self.save_m2m()
 
         return user
-<<<<<<< HEAD
 
 
 class UnitProfileForm(StyledModelForm):
@@ -502,5 +497,3 @@ class UnitHighlightForm(StyledModelForm):
         widgets = {
             "body": forms.Textarea(attrs={"rows": 3}),
         }
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf

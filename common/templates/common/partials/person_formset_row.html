@@ -1,0 +1,42 @@
+<div class="inline-form inline-form-card{% if form.DELETE.value %} is-deleted{% endif %}">
+  {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger py-2 mb-3">
+      <i class="bi bi-exclamation-triangle me-1"></i>
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
+
+  <div class="row g-2 align-items-end flex-lg-nowrap inline-form-fields">
+    {% for field in form.visible_fields %}
+      {% if field.name != "DELETE" %}
+        <div class="col-12 col-sm-6 col-lg">
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}
+            <div class="text-danger small mt-1">
+              <i class="bi bi-exclamation-circle me-1"></i>
+              {{ field.errors }}
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% endfor %}
+
+    <div class="col-12 col-lg-auto d-flex align-items-center gap-2 inline-form-actions">
+      {% if form.DELETE %}
+        <div class="form-check mb-0">
+          {{ form.DELETE }}
+          <label class="form-check-label" for="{{ form.DELETE.id_for_label }}">
+            Remove
+          </label>
+        </div>
+      {% endif %}
+      <button type="button" class="btn btn-outline-danger btn-sm" data-remove-form>
+        <i class="bi bi-trash"></i>
+        <span class="d-none d-xl-inline">Remove</span>
+      </button>
+    </div>
+  </div>
+</div>

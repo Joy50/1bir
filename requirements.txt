@@ -1,12 +1,10 @@
 asgiref
 charset-normalizer
-Django
+Django>=4.0.6
+openpyxl
 pillow
 reportlab
-<<<<<<< HEAD
 sqlparse
-=======
-sqlpars
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 tzdata
+uharfbuzz
 whitenoise

@@ -294,19 +294,19 @@
         {% for training_title, training_formset in training_formsets %}
           <details class="border rounded p-3 mb-3 training-formset" data-training-prefix="{{ training_formset.prefix }}">
             <summary class="fw-semibold">{{ training_title }}</summary>
-            <div class="d-flex justify-content-end my-3"><button type="button" class="btn btn-sm btn-outline-secondary add-training-row">Add more</button></div>
+            <div class="d-flex justify-content-end my-3"><button type="button" class="btn btn-sm btn-outline-secondary add-training-row">{% if training_formset.prefix == "yearly_plans" %}Add four cycles{% else %}Add more{% endif %}</button></div>
             {{ training_formset.management_form }}
             {% if training_formset.non_form_errors %}<div class="alert alert-danger">{{ training_formset.non_form_errors }}</div>{% endif %}
-            <div class="training-rows">
+            <div class="training-rows{% if training_formset.prefix == "yearly_plans" %} row g-2 yearly-plan-cycles{% endif %}">
               {% for training_form in training_formset %}
-                <div class="training-row border rounded p-3 mb-3{% if training_form.DELETE.value %} d-none{% endif %}">
+                <div class="training-row border rounded p-3 mb-3{% if training_form.DELETE.value %} d-none{% endif %}{% if training_formset.prefix == "yearly_plans" %} col-6 col-lg-3{% endif %}">
                   {% for hidden in training_form.hidden_fields %}{{ hidden }}{% endfor %}
-                  <div class="row g-3">{% for field in training_form.visible_fields %}{% if field.name != 'DELETE' %}<div class="{% if field.field.widget.input_type == 'textarea' %}col-12{% else %}col-md-4{% endif %}"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}</div>{% endif %}{% endfor %}</div>
+                  <div class="row g-3">{% for field in training_form.visible_fields %}{% if field.name != 'DELETE' %}<div class="{% if training_formset.prefix == "yearly_plans" %}col-12{% elif field.field.widget.input_type == 'textarea' %}col-12{% else %}col-md-4{% endif %}"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}</div>{% endif %}{% endfor %}</div>
                   <div class="d-none">{{ training_form.DELETE }}</div><button type="button" class="btn btn-sm btn-outline-danger mt-3 remove-training-row">Remove</button>
                 </div>
               {% endfor %}
             </div>
-            <template class="empty-training-row"><div class="training-row border rounded p-3 mb-3">{% with training_form=training_formset.empty_form %}{% for hidden in training_form.hidden_fields %}{{ hidden }}{% endfor %}<div class="row g-3">{% for field in training_form.visible_fields %}{% if field.name != 'DELETE' %}<div class="{% if field.field.widget.input_type == 'textarea' %}col-12{% else %}col-md-4{% endif %}"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>{% endif %}{% endfor %}</div><div class="d-none">{{ training_form.DELETE }}</div>{% endwith %}<button type="button" class="btn btn-sm btn-outline-danger mt-3 remove-training-row">Remove</button></div></template>
+            <template class="empty-training-row"><div class="training-row border rounded p-3 mb-3{% if training_formset.prefix == "yearly_plans" %} col-6 col-lg-3{% endif %}">{% with training_form=training_formset.empty_form %}{% for hidden in training_form.hidden_fields %}{{ hidden }}{% endfor %}<div class="row g-3">{% for field in training_form.visible_fields %}{% if field.name != 'DELETE' %}<div class="{% if training_formset.prefix == "yearly_plans" %}col-12{% elif field.field.widget.input_type == 'textarea' %}col-12{% else %}col-md-4{% endif %}"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>{% endif %}{% endfor %}</div><div class="d-none">{{ training_form.DELETE }}</div>{% endwith %}<button type="button" class="btn btn-sm btn-outline-danger mt-3 remove-training-row">Remove</button></div></template>
           </details>
         {% endfor %}
       </fieldset>
@@ -437,9 +437,21 @@
     const rows = section.querySelector(".training-rows");
     const template = section.querySelector(".empty-training-row");
     section.querySelector(".add-training-row").addEventListener("click", () => {
-      const index = Number(total.value);
-      rows.insertAdjacentHTML("beforeend", template.innerHTML.replaceAll("__prefix__", index));
-      total.value = index + 1;
+      const cycles = prefix === "yearly_plans"
+        ? ["1st Cycle", "2nd Cycle", "3rd Cycle", "4th Cycle"]
+        : [null];
+      cycles.forEach(cycle => {
+        const index = Number(total.value);
+        rows.insertAdjacentHTML("beforeend", template.innerHTML.replaceAll("__prefix__", index));
+        const row = rows.lastElementChild;
+        if (cycle && row) {
+          const cycleSelect = row.querySelector('select[name$="-cycle"]');
+          if (cycleSelect) cycleSelect.value = cycle;
+          const yearInput = row.querySelector('input[name$="-year"]');
+          if (yearInput && !yearInput.value) yearInput.value = String(new Date().getFullYear());
+        }
+        total.value = index + 1;
+      });
       section.open = true;
     });
     rows.addEventListener("click", event => {

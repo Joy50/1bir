@@ -1,6 +1,6 @@
-<<<<<<< HEAD
 from io import BytesIO
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from PIL import Image
@@ -69,6 +69,13 @@ class UserRoleTests(TestCase):
         self.assertTrue(co.can_approve_leave)
         self.assertFalse(officer.can_apply_leave)
         self.assertTrue(officer.can_approve_leave)
+        self.assertTrue(officer.can_create_posting)
+        self.assertTrue(co.can_create_posting)
+        self.assertFalse(clerk.can_create_posting)
+        self.assertTrue(admin.can_manage_ere)
+        self.assertTrue(co.can_manage_ere)
+        self.assertFalse(officer.can_manage_ere)
+        self.assertFalse(clerk.can_manage_ere)
         self.assertTrue(clerk.can_apply_leave)
         self.assertFalse(clerk.can_approve_leave)
 
@@ -195,8 +202,34 @@ class UnitDashboardTests(TestCase):
         self.assertContains(home, "Parade")
         self.assertContains(home, "UN Mission")
 
-=======
-from django.test import TestCase
 
-# Create your tests here.
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
+@override_settings(STORAGES=STORAGES)
+class ErrorPageTests(TestCase):
+    def test_preview_pages_render(self):
+        cases = {
+            400: "This request cannot be processed",
+            403: "You do not have permission",
+            404: "This page is not on the portal",
+            500: "Something went wrong",
+        }
+        for code, heading in cases.items():
+            response = self.client.get(reverse("authentication:error_preview", args=[code]))
+            self.assertEqual(response.status_code, code)
+            self.assertContains(response, heading, status_code=code)
+            self.assertContains(response, "1 BIR", status_code=code)
+
+    def test_csrf_preview_uses_session_message(self):
+        response = self.client.get(
+            reverse("authentication:error_preview", args=[403]),
+            {"csrf": "1"},
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertContains(response, "This form could not be verified", status_code=403)
+
+    @override_settings(DEBUG=False)
+    def test_unknown_url_uses_branded_404(self):
+        response = self.client.get("/this-page-is-not-on-the-portal/")
+        self.assertEqual(response.status_code, 404)
+        self.assertContains(response, "This page is not on the portal", status_code=404)
+        self.assertContains(response, "Return to login", status_code=404)
+

@@ -10,13 +10,21 @@ def make_rank(name="Sgt"):
 
 
 def make_org(name, parent=None, kind=None):
+    if parent is None and kind in (None, Organization.KIND_UNIT):
+        existing_unit = Organization.objects.filter(
+            unit_kind=Organization.KIND_UNIT
+        ).first()
+        if existing_unit and existing_unit.organization_name == name:
+            parent = None
+            kind = Organization.KIND_UNIT
+        elif existing_unit:
+            parent = existing_unit
+            kind = Organization.KIND_COMPANY if kind in (None, Organization.KIND_UNIT) else kind
     if kind is None:
-        if parent is None:
-            kind = Organization.KIND_BATTALION
-        else:
-            kind = Organization.CHILD_KIND.get(
-                parent.unit_kind, Organization.KIND_COMPANY
-            )
+        parent_kind = parent.unit_kind if parent is not None else None
+        kind = Organization.CHILD_KIND.get(
+            parent_kind, Organization.KIND_COMPANY
+        )
     org, created = Organization.objects.get_or_create(
         organization_name=name,
         parent_organization=parent,
@@ -43,6 +51,10 @@ def make_user(username, role=User.ROLE_CLERK, password="pass12345", **extra):
 
 
 def make_soldier(organization, army_number="BA1001", name="Test Soldier"):
+    if organization.unit_kind == Organization.KIND_UNIT:
+        from common.scoping import get_or_create_hq_company
+
+        organization = get_or_create_hq_company(organization)
     return Person.objects.create(
         name=name,
         army_number=army_number,

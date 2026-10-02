@@ -17,6 +17,11 @@ urlpatterns = [
     path("", include("duty.urls")),
 ]
 
+handler400 = "authentication.error_views.bad_request"
+handler403 = "authentication.error_views.permission_denied"
+handler404 = "authentication.error_views.page_not_found"
+handler500 = "authentication.error_views.server_error"
+
 if settings.DEBUG:
     urlpatterns += static(
         settings.MEDIA_URL,

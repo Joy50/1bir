@@ -21,6 +21,7 @@
   <div class="section-header-actions mt-2 mt-md-0">
     <a href="{% url 'common:soldier_pdf' soldier.pk %}" class="btn btn-bir"><i class="bi bi-file-pdf me-1"></i>Export PDF</a>
     <a href="{% url 'common:soldier_update' soldier.pk %}" class="btn btn-outline-secondary"><i class="bi bi-pencil me-1"></i>Edit</a>
+    <a href="{% url 'common:soldier_delete' soldier.pk %}" class="btn btn-outline-danger"><i class="bi bi-person-x me-1"></i>Delete ID</a>
     <a href="{% url 'common:soldier_list' %}" class="btn btn-outline-secondary">Back</a>
   </div>
 </div>
@@ -46,6 +47,8 @@
         <div class="col-md-6"><div class="small text-secondary text-uppercase">Rank</div><div class="fw-medium">{{ soldier.rank }}</div></div>
         <div class="col-md-6"><div class="small text-secondary text-uppercase">Organization</div><div class="fw-medium">{{ soldier.organization }}</div></div>
         <div class="col-md-6"><div class="small text-secondary text-uppercase">AL-1/13</div><div class="fw-medium">{{ soldier.get_al1_13_display|default:"—" }}</div></div>
+        <div class="col-md-6"><div class="small text-secondary text-uppercase">Height</div><div class="fw-medium">{{ soldier.height_display|default:"—" }}</div></div>
+        <div class="col-md-6"><div class="small text-secondary text-uppercase">Overweight</div><div class="fw-medium">{{ soldier.overweight|default:"—" }}</div></div>
         <div class="col-12"><div class="small text-secondary text-uppercase">Previous Unit/Organizations</div><div>{{ soldier.previous_unit_organizations|default:"—" }}</div></div>
         <div class="col-12"><div class="small text-secondary text-uppercase">Present Address</div><div>{{ soldier.present_address|default:"—" }}</div></div>
         <div class="col-12"><div class="small text-secondary text-uppercase">Permanent Address</div><div>{{ soldier.permanent_address|default:"—" }}</div></div>
@@ -55,11 +58,11 @@
   <div class="tab-pane fade" id="training">{% include "common/partials/soldier_training.html" %}</div>
   <div class="tab-pane fade" id="service">
     <div class="card form-panel"><div class="card-body p-4">
-      <table class="table table-ledger mb-0"><thead><tr><th>Organization</th><th>Rank</th><th>Start</th><th>End</th></tr></thead>
+      <table class="table table-ledger mb-0"><thead><tr><th>Organization</th><th>Rank</th><th>Trade</th><th>Start</th><th>End</th></tr></thead>
       <tbody>
         {% for item in soldier.service_histories.all %}
-          <tr><td>{{ item.organization }}</td><td>{{ item.rank }}</td><td>{{ item.start_date|date:"d M Y" }}</td><td>{{ item.end_date|date:"d M Y"|default:"—" }}</td></tr>
-        {% empty %}<tr><td colspan="4" class="text-secondary">No service history recorded.</td></tr>{% endfor %}
+          <tr><td>{{ item.organization }}</td><td>{{ item.rank }}</td><td>{{ item.get_trade_display|default:"—" }}</td><td>{{ item.start_date|date:"d M Y" }}</td><td>{{ item.end_date|date:"d M Y"|default:"—" }}</td></tr>
+        {% empty %}<tr><td colspan="5" class="text-secondary">No service history recorded.</td></tr>{% endfor %}
       </tbody></table>
     </div></div>
   </div>
@@ -104,7 +107,17 @@
     </div></div>
   </div>
   <div class="tab-pane fade" id="contact">
+    <div class="card form-panel mb-4"><div class="card-body p-4">
+      <h2 class="h6 mb-3">Family</h2>
+      <table class="table table-ledger mb-0"><thead><tr><th>Relation</th><th>Name</th><th>Mobile number</th></tr></thead>
+      <tbody>
+        {% for item in soldier.family_members.all %}
+          <tr><td>{{ item.get_relation_display }}</td><td>{{ item.name }}</td><td>{% if item.mobile_number %}<code>{{ item.mobile_number }}</code>{% else %}—{% endif %}</td></tr>
+        {% empty %}<tr><td colspan="3" class="text-secondary">No family members recorded.</td></tr>{% endfor %}
+      </tbody></table>
+    </div></div>
     <div class="card form-panel"><div class="card-body p-4">
+      <h2 class="h6 mb-3">Mobile Numbers</h2>
       <table class="table table-ledger mb-0"><thead><tr><th>Type</th><th>Number</th></tr></thead>
       <tbody>
         {% for item in soldier.mobile_numbers.all %}

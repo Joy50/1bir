@@ -12,7 +12,6 @@
     <div class="col-sm-4 col-lg-3"><label class="form-label" for="id_year">Year</label><select class="form-select" id="id_year" name="year">{% for year in year_choices %}<option value="{{ year }}"{% if year == selected_year %} selected{% endif %}>{{ year }}</option>{% endfor %}</select></div>
     <div class="col-sm-5 col-lg-4"><label class="form-label" for="id_organization">Company</label><select class="form-select" id="id_organization" name="organization"><option value="">1 BIR / All Companies</option>{% for organization in organizations %}<option value="{{ organization.pk }}"{% if selected_organization.pk == organization.pk %} selected{% endif %}>{{ organization }}</option>{% endfor %}</select></div>
     <div class="col-auto"><button class="btn btn-outline-secondary" type="submit">Show</button></div>
-<<<<<<< HEAD
     {% if not selected_organization %}
       <div class="col-auto ms-sm-auto">
         <button class="btn btn-bir" type="submit" form="preparePlan" name="prepare" value="1">Edit Plan</button>
@@ -21,11 +20,6 @@
   </form>
 </div></div>
 <form id="preparePlan" method="post" action="?year={{ selected_year }}">{% csrf_token %}</form>
-=======
-    {% if not selected_organization %}<div class="col-auto ms-sm-auto"><a class="btn btn-bir" href="?year={{ selected_year }}&edit=1">Edit Plan</a></div>{% endif %}
-  </form>
-</div></div>
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
 {% if selected_organization %}
 <div class="card form-panel"><div class="card-body p-0"><div class="table-responsive">

@@ -1,12 +1,10 @@
 from django import forms
+from django.forms.models import ModelChoiceField, ModelChoiceIterator
 
-from common.models import Person
+from common.models import Organization, Person
+from common.scoping import get_company_of
 
-<<<<<<< HEAD
 from .models import DutyAssignment, DutyPost, ParadeAbsenceDocument, SoldierPosting
-=======
-from .models import DutyAssignment, DutyPost, SoldierPosting
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 from .services import available_posts, get_or_create_open_tour, suggested_soldiers
 
 
@@ -43,13 +41,43 @@ class DutyPostForm(forms.ModelForm):
         }
 
 
+class PostingDestinationIterator(ModelChoiceIterator):
+    def __iter__(self):
+        if self.field.empty_label is not None:
+            yield ("", self.field.empty_label)
+        companies = []
+        ere_organizations = []
+        for organization in self.queryset.all():
+            choice = self.choice(organization)
+            if organization.unit_kind == Organization.KIND_ERE:
+                ere_organizations.append(choice)
+            else:
+                companies.append(choice)
+        if companies:
+            yield ("Companies", companies)
+        if ere_organizations:
+            yield ("ERE organizations", ere_organizations)
+
+
+class PostingDestinationField(ModelChoiceField):
+    iterator = PostingDestinationIterator
+
+
 class SoldierPostingForm(forms.ModelForm):
+    to_organization = PostingDestinationField(
+        queryset=Organization.objects.none(),
+        required=True,
+        empty_label="Select company or ERE",
+        widget=forms.Select(attrs={"class": "form-select"}),
+        label="Post to",
+        help_text="Companies of the unit and ERE organizations.",
+    )
+
     class Meta:
         model = SoldierPosting
         fields = ("soldier", "to_organization", "remarks")
         widgets = {
             "soldier": forms.Select(attrs={"class": "form-select"}),
-            "to_organization": forms.Select(attrs={"class": "form-select"}),
             "remarks": forms.TextInput(attrs={"class": "form-control"}),
         }
 
@@ -57,8 +85,17 @@ class SoldierPostingForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if soldier_queryset is not None:
             self.fields["soldier"].queryset = soldier_queryset
-        if organization_queryset is not None:
-            self.fields["to_organization"].queryset = organization_queryset
+        destinations = organization_queryset
+        if destinations is None:
+            destinations = Organization.objects.filter(
+                unit_kind__in=(Organization.KIND_COMPANY, Organization.KIND_ERE)
+            ).select_related("parent_organization").order_by(
+                "unit_kind", "organization_name"
+            )
+        self.fields["to_organization"].queryset = destinations
+        self.fields["to_organization"].label_from_instance = (
+            lambda org: org.organization_name
+        )
 
     def clean(self):
         cleaned = super().clean()
@@ -67,7 +104,33 @@ class SoldierPostingForm(forms.ModelForm):
         if soldier and destination and soldier.organization_id == destination.pk:
             self.add_error(
                 "to_organization",
-                "Choose a different unit. This soldier is already posted there.",
+                "Choose a different company or ERE organization. This soldier is already posted there.",
+            )
+        if soldier and destination and destination.unit_kind not in (
+            destination.KIND_COMPANY,
+            destination.KIND_ERE,
+        ):
+            self.add_error(
+                "to_organization",
+                "A posting order sends a soldier to another company or an ERE organization.",
+            )
+        if (
+            soldier
+            and destination
+            and not destination.is_ere
+            and soldier.organization
+            and not soldier.organization.is_ere
+        ):
+            current_company = get_company_of(soldier.organization)
+            if current_company and current_company.pk == destination.pk:
+                self.add_error(
+                    "to_organization",
+                    "This soldier is already in that company. Post him to another company or an ERE organization.",
+                )
+        if soldier and destination and not destination.is_posting_place:
+            self.add_error(
+                "to_organization",
+                "Post a soldier to a company or ERE organization.",
             )
         if soldier and SoldierPosting.objects.filter(
             soldier=soldier,
@@ -150,7 +213,6 @@ class DutyAssignForm(forms.ModelForm):
                 "Assign remaining soldiers first. The tour cannot repeat until everyone finishes.",
             )
         return cleaned
-<<<<<<< HEAD
 
 
 ABSENCE_DOCUMENT_EXTENSIONS = ("pdf", "doc", "docx")
@@ -200,5 +262,15 @@ class ParadeAbsenceDocumentForm(forms.ModelForm):
         if size > ABSENCE_DOCUMENT_MAX_BYTES:
             raise forms.ValidationError("The file must be 10 MB or smaller.")
         return uploaded
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
+
+
+class ParadeStateCreateForm(forms.Form):
+    report_date = forms.DateField(
+        label="Date",
+        widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        kwargs.pop("organization_queryset", None)
+        super().__init__(*args, **kwargs)
+        self.fields["report_date"].input_formats = ["%Y-%m-%d"]

@@ -4,7 +4,9 @@ from django.db import models
 from django.db.models import F, Q
 from django.utils import timezone
 
+from common.compat import make_check_constraint
 from common.models import Person
+from .catalog import ACHIEVEMENT_CHOICES, CADRE_RESULT_CHOICES, COMPETITION_CHOICES
 
 
 def current_year():
@@ -78,11 +80,6 @@ class UnitTrainingCyclePlan(models.Model):
         "common.Organization",
         on_delete=models.CASCADE,
         related_name="unit_training_cycle_plans",
-<<<<<<< HEAD
-=======
-        blank=True,
-        null=True,
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
     )
     bde_lvl_cadre = models.TextField(blank=True, verbose_name="Bde Lvl Cadre")
     div_lvl_cadre = models.TextField(blank=True, verbose_name="Div Lvl Cadre")
@@ -100,11 +97,7 @@ class UnitTrainingCyclePlan(models.Model):
         ]
 
     def __str__(self):
-<<<<<<< HEAD
-        unit = self.organization or "Battalion"
-=======
-        unit = self.organization or "1 BIR"
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
+        unit = self.organization or "Unit"
         return f"{unit} - {self.year} {self.get_cycle_display()}"
 
 
@@ -243,13 +236,7 @@ class IndividualQual(models.Model):
         related_name="qualifications",
     )
 
-<<<<<<< HEAD
     year = models.PositiveIntegerField()
-=======
-    year = models.CharField(
-        max_length=4,
-    )
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
     spl = models.CharField(
         max_length=255,
@@ -279,18 +266,9 @@ class IndividualQual(models.Model):
 
     def clean(self):
         super().clean()
-<<<<<<< HEAD
         if self.year and not (1900 <= int(self.year) <= 2100):
             raise ValidationError({
                 "year": "Year must be between 1900 and 2100."
-=======
-
-        if self.year and (
-            len(self.year) != 4 or not self.year.isdigit()
-        ):
-            raise ValidationError({
-                "year": "Year must be a 4-digit value, for example 2026."
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
             })
 
     def __str__(self):
@@ -314,6 +292,7 @@ class IndividualQualCourse(models.Model):
     result = models.CharField(
         max_length=255,
         blank=True,
+        choices=CADRE_RESULT_CHOICES,
     )
 
     class Meta:
@@ -388,7 +367,6 @@ class LeaveState(models.Model):
     SLOT_C_LEAVE_3 = "C lve-3"
     SLOT_C_LEAVE_4 = "C lve-4"
     SLOT_C_LEAVE_5 = "C lve-5"
-<<<<<<< HEAD
     SLOT_J_LEAVE = "J/L"
     SLOT_M_LEAVE = "M/L"
     SLOT_COURSE = "Course"
@@ -401,8 +379,6 @@ class LeaveState(models.Model):
     SLOT_TEKNAF = "Teknaf"
     SLOT_OSL = "OSL"
     CASUAL_SLOT_PREFIX = "C lve-"
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
     SLOT_CHOICES = [
         (SLOT_P_LEAVE, "P lve"),
         (SLOT_C_LEAVE_1, "C lve-1"),
@@ -410,7 +386,6 @@ class LeaveState(models.Model):
         (SLOT_C_LEAVE_3, "C lve-3"),
         (SLOT_C_LEAVE_4, "C lve-4"),
         (SLOT_C_LEAVE_5, "C lve-5"),
-<<<<<<< HEAD
         (SLOT_J_LEAVE, "J/L"),
         (SLOT_M_LEAVE, "M/L"),
         (SLOT_COURSE, "Course"),
@@ -489,9 +464,6 @@ class LeaveState(models.Model):
 
     def get_slot_display(self):
         return dict(self.SLOT_CHOICES).get(self.slot, self.slot)
-=======
-    ]
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
     leave_type = models.ForeignKey(
         LeaveType,
@@ -501,10 +473,6 @@ class LeaveState(models.Model):
 
     slot = models.CharField(
         max_length=20,
-<<<<<<< HEAD
-=======
-        choices=SLOT_CHOICES,
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         blank=True,
         verbose_name="Excel slot",
     )
@@ -559,9 +527,9 @@ class LeaveState(models.Model):
         verbose_name = "Leave State"
         verbose_name_plural = "Leave States"
         constraints = [
-            models.CheckConstraint(
-                condition=Q(to_date__gte=F("from_date")),
-                name="leave_state_valid_dates",
+            make_check_constraint(
+                Q(to_date__gte=F("from_date")),
+                "leave_state_valid_dates",
             ),
         ]
 
@@ -623,7 +591,8 @@ class ParticipationInSportsTraining(models.Model):
 
     name_of_comp = models.CharField(
         max_length=255,
-        verbose_name="Name of Competition/Training"
+        choices=COMPETITION_CHOICES,
+        verbose_name="Competition",
     )
 
     type_of_comp = models.CharField(
@@ -636,7 +605,9 @@ class ParticipationInSportsTraining(models.Model):
 
     significant_achievement = models.CharField(
         max_length=255,
-        blank=True
+        choices=ACHIEVEMENT_CHOICES,
+        blank=True,
+        verbose_name="Achievement",
     )
 
     def __str__(self):

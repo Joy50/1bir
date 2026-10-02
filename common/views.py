@@ -3,20 +3,25 @@ from django.contrib.admin.models import LogEntry
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.db.models import Count, Q
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views import View
-from django.views.generic import CreateView, DetailView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
-from authentication.views import AdminRequiredMixin, PortalContextMixin
+from authentication.views import (
+    AdminRequiredMixin,
+    CoRequiredMixin,
+    PortalContextMixin,
+)
 
-from .activity import log_addition, log_change
+from .activity import log_addition, log_change, log_deletion
 from .forms import (
     AnnualPerformanceReportFormSet,
     AppointmentHistoryFormSet,
     CivilEducationFormSet,
     EducationLevelForm,
+    EREOrganizationForm,
     FamilyFormSet,
     MedicalCategoryFormSet,
     MobileNumberFormSet,
@@ -25,7 +30,7 @@ from .forms import (
     RankHistoryFormSet,
     RankForm,
 )
-from .models import CivilEducationLevel, Organization, Person, Rank
+from .models import CivilEducationLevel, EREOrganization, Organization, Person, Rank
 from .pdf import build_soldier_pdf
 from .scoping import get_accessible_organization_ids, get_accessible_organizations
 from training.forms import (
@@ -63,7 +68,7 @@ class SoldierAccessMixin(PortalContextMixin, LoginRequiredMixin):
 
 class SoldierRecordMixin(SoldierAccessMixin):
     def get_queryset(self):
-        queryset = Person.objects.select_related(
+        queryset = Person.objects.on_strength().select_related(
             "rank",
             "organization",
         ).prefetch_related(
@@ -87,6 +92,7 @@ class SoldierRecordMixin(SoldierAccessMixin):
             "grenade_firings",
             "speed_marches",
             "assault_courses",
+            "ret_states__ret_trg_type",
         )
         allowed_ids = self.get_allowed_organization_ids()
         if allowed_ids is not None:
@@ -238,11 +244,7 @@ class RankCreateView(AdminPortalMixin, CreateView):
 class OrganizationCreateView(AdminPortalMixin, CreateView):
     model = Organization
     form_class = OrganizationForm
-<<<<<<< HEAD
     template_name = "common/organization_form.html"
-=======
-    template_name = "common/simple_form.html"
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
     success_url = reverse_lazy("common:create_organization")
 
     def get_context_data(self, **kwargs):
@@ -251,19 +253,52 @@ class OrganizationCreateView(AdminPortalMixin, CreateView):
         context["existing_items"] = Organization.objects.select_related(
             "parent_organization"
         )
-<<<<<<< HEAD
         context["org_kind_map"] = {
             str(org.pk): org.unit_kind
             for org in Organization.objects.only("id", "unit_kind")
         }
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         return context
 
     def form_valid(self, form):
         response = super().form_valid(form)
         log_addition(self.request.user, self.object, "Organization created.")
         messages.success(self.request, "Organization added.")
+        return response
+
+
+class EREOrganizationCreateView(PortalContextMixin, CoRequiredMixin, CreateView):
+    model = EREOrganization
+    form_class = EREOrganizationForm
+    template_name = "common/simple_form.html"
+    success_url = reverse_lazy("common:create_ere")
+    permission_message = "Only the CO or an admin can add ERE organizations."
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["page_title"] = "Create ERE Organization"
+        context["section_eyebrow"] = (
+            "Admin" if getattr(self.request.user, "is_admin", False) else "A Matter"
+        )
+        context["page_intro"] = (
+            "Add ERE organization names used on posting orders. "
+            "The receiving company does not accept these moves; the CO approves and accepts them."
+        )
+        context["existing_items"] = EREOrganization.objects.select_related(
+            "organization"
+        )
+        return context
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        log_addition(
+            self.request.user,
+            self.object,
+            f"ERE organization '{self.object.name}' added.",
+        )
+        messages.success(
+            self.request,
+            f"{self.object.name} added. Company posting orders to this ERE wait for CO approval.",
+        )
         return response
 
 
@@ -325,7 +360,9 @@ class StatisticsView(AdminPortalMixin, ListView):
 
         context["stats"] = get_admin_statistics()
         context["by_org"] = (
-            Organization.objects.annotate(strength=Count("persons"))
+            Organization.objects.annotate(
+                strength=Count("persons", filter=Q(persons__on_strength=True))
+            )
             .order_by("-strength", "organization_name")
         )
         return context
@@ -338,7 +375,7 @@ class SoldierListView(SoldierAccessMixin, ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = Person.objects.select_related("rank", "organization").order_by(
+        queryset = Person.objects.on_strength().select_related("rank", "organization").order_by(
             "army_number"
         )
         allowed_ids = self.get_allowed_organization_ids()
@@ -359,7 +396,7 @@ class SoldierListView(SoldierAccessMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         allowed_orgs = self.get_allowed_organizations()
-        base = Person.objects.all()
+        base = Person.objects.on_strength()
         allowed_ids = self.get_allowed_organization_ids()
         if allowed_ids is not None:
             base = base.filter(organization_id__in=allowed_ids)
@@ -471,6 +508,33 @@ class SoldierDetailView(SoldierRecordMixin, DetailView):
     context_object_name = "soldier"
 
 
+class SoldierDeleteView(SoldierRecordMixin, DeleteView):
+    model = Person
+    template_name = "common/soldier_confirm_delete.html"
+    context_object_name = "soldier"
+    success_url = reverse_lazy("common:soldier_list")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.pop("organization_queryset", None)
+        return kwargs
+
+    def form_valid(self, form):
+        self.object = self.get_object()
+        self.object.on_strength = False
+        self.object.save(update_fields=["on_strength"])
+        log_deletion(
+            self.request.user,
+            self.object,
+            "Soldier ID removed after posting to another unit.",
+        )
+        messages.success(
+            self.request,
+            f"{self.object.army_number} {self.object.name} removed from unit strength.",
+        )
+        return redirect(self.get_success_url())
+
+
 class SoldierPDFView(SoldierRecordMixin, View):
     def get(self, request, *args, **kwargs):
         soldier = get_object_or_404(self.get_queryset(), pk=kwargs["pk"])
@@ -483,3 +547,52 @@ class SoldierPDFView(SoldierRecordMixin, View):
             f'attachment; filename="{safe_number or soldier.pk}-dossier.pdf"'
         )
         return response
+
+
+class UnitSearchView(SoldierAccessMixin, ListView):
+    template_name = "common/search.html"
+    context_object_name = "soldiers"
+    paginate_by = 20
+
+    def get_queryset(self):
+        from .search import search_soldiers
+
+        query = self.request.GET.get("q", "").strip()
+        self.interpretations = []
+        if not query:
+            return Person.objects.none()
+        queryset, interpretations = search_soldiers(self.request.user, query)
+        self.interpretations = interpretations
+        return queryset.prefetch_related(
+            "qualifications__courses__course_name__level",
+        )
+
+    def get_context_data(self, **kwargs):
+        from .search import match_reasons
+
+        context = super().get_context_data(**kwargs)
+        query = self.request.GET.get("q", "").strip()
+        soldiers = []
+        for soldier in context["soldiers"]:
+            soldier.match_reasons = match_reasons(soldier, query)
+            soldiers.append(soldier)
+        context["soldiers"] = soldiers
+        context["search_query"] = query
+        context["interpretations"] = getattr(self, "interpretations", [])
+        context["result_count"] = (
+            context["paginator"].count if context.get("paginator") else 0
+        )
+        context["example_queries"] = [
+            "Which soldiers got B+ in BTT and Y+ in ATT",
+            "Soldiers currently on leave",
+            "HQ Company officers",
+        ]
+        return context
+
+
+class UnitSearchSuggestView(SoldierAccessMixin, View):
+    def get(self, request, *args, **kwargs):
+        from .search import suggest_search
+
+        query = request.GET.get("q", "").strip()
+        return JsonResponse({"suggestions": suggest_search(request.user, query)})

@@ -1,0 +1,94 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}Search · 1 BIR{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header">
+  <div class="section-eyebrow">A Matter · Search</div>
+  <h1>Unit search</h1>
+  <p class="text-secondary mb-0">Ask in plain language. The search reads every field on personnel, training, leave, and duty records.</p>
+</div>
+
+<form method="get" action="{% url 'common:search' %}" class="unit-search-page-form mb-4" role="search">
+  <label class="visually-hidden" for="unitSearchPageInput">Search the unit</label>
+  <div class="unit-search-page-box">
+    <i class="bi bi-search" aria-hidden="true"></i>
+    <input id="unitSearchPageInput" type="search" name="q" value="{{ search_query }}"
+           placeholder="Which soldiers got B+ in BTT and Y+ in ATT"
+           autocomplete="off">
+    <button type="submit" class="btn btn-bir">Search</button>
+  </div>
+</form>
+
+{% if interpretations %}
+  <p class="text-secondary small mb-3">
+    Read as
+    {% for item in interpretations %}
+      <span class="search-chip">{{ item }}</span>{% if not forloop.last %} and {% endif %}
+    {% endfor %}
+  </p>
+{% endif %}
+
+{% if search_query %}
+  <p class="mb-3">{{ result_count }} soldier{{ result_count|pluralize }} found.</p>
+  <div class="card form-panel">
+    <div class="table-responsive">
+      <table class="table table-ledger mb-0">
+        <thead>
+          <tr>
+            <th>Army No</th>
+            <th>Name</th>
+            <th>Rank</th>
+            <th>Organization</th>
+            <th>Why it matched</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for soldier in soldiers %}
+            <tr>
+              <td>{{ soldier.army_number }}</td>
+              <td class="fw-medium">{{ soldier.name }}</td>
+              <td>{{ soldier.rank }}</td>
+              <td>{{ soldier.organization }}</td>
+              <td>
+                {% for reason in soldier.match_reasons %}
+                  <span class="search-chip">{{ reason }}</span>
+                {% endfor %}
+              </td>
+              <td class="text-end">
+                <a href="{% url 'common:soldier_detail' soldier.pk %}" class="btn btn-outline-secondary btn-sm">Open</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-secondary">No soldiers matched that question. Try a course result, army number, company, or leave phrase.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj and page_obj.paginator.num_pages > 1 %}
+      <div class="d-flex justify-content-between p-3">
+        {% if page_obj.has_previous %}
+          <a class="btn btn-outline-secondary btn-sm" href="?q={{ search_query|urlencode }}&page={{ page_obj.previous_page_number }}">Previous</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a class="btn btn-outline-secondary btn-sm" href="?q={{ search_query|urlencode }}&page={{ page_obj.next_page_number }}">Next</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+{% else %}
+  <div class="card form-panel">
+    <div class="card-body p-4">
+      <div class="form-eyebrow mb-2">Try asking</div>
+      <div class="d-flex flex-wrap gap-2">
+        {% for example in example_queries %}
+          <a class="search-chip search-chip-link" href="{% url 'common:search' %}?q={{ example|urlencode }}">{{ example }}</a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

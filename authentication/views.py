@@ -73,9 +73,19 @@ class OfficerActionMixin(RoleRequiredMixin):
     permission_message = "Only officers can accept postings or complete this action."
 
 
+class PostingCreateMixin(RoleRequiredMixin):
+    allowed_roles = (User.ROLE_ADMIN, User.ROLE_CO, User.ROLE_OFFICER)
+    permission_message = "Only a company officer, the CO, or an admin can generate a posting order."
+
+
 class DutyAssignMixin(RoleRequiredMixin):
     allowed_roles = (User.ROLE_ADMIN, User.ROLE_CO, User.ROLE_OFFICER)
     permission_message = "Only officers or the CO can assign duty."
+
+
+class DutyRosterMixin(RoleRequiredMixin):
+    allowed_roles = (User.ROLE_ADMIN, User.ROLE_CO, User.ROLE_OFFICER)
+    permission_message = "Only officers or the CO can view duty roster reports."
 
 
 class PortalContextMixin:
@@ -94,7 +104,6 @@ class HomeView(PortalContextMixin, LoginRequiredMixin, TemplateView):
 
     template_name = "authentication/home.html"
 
-<<<<<<< HEAD
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if context.get("active_section_key") == "dashboard":
@@ -107,8 +116,6 @@ class HomeView(PortalContextMixin, LoginRequiredMixin, TemplateView):
             )
         return context
 
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
 # ============================================================
 # Login

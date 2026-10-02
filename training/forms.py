@@ -1,12 +1,15 @@
 from django import forms
 from django.forms import BaseInlineFormSet, inlineformset_factory, modelformset_factory
-<<<<<<< HEAD
 from django.utils import timezone
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
 from common.models import Person
 
+from .catalog import (
+    CADRE_RESULT_CHOICES,
+    competition_kind,
+    is_cadre_level,
+    result_choices_for_level,
+)
 from .models import (
     AssaultCourse,
     CASTrophy,
@@ -98,9 +101,31 @@ class SoldierYearlyPlanInlineForm(forms.ModelForm):
         }
 
 
+class SoldierYearlyPlanInlineFormSet(BaseInlineFormSet):
+    def __init__(self, *args, **kwargs):
+        instance = kwargs.get("instance")
+        if not (instance and getattr(instance, "pk", None)):
+            kwargs.setdefault(
+                "initial",
+                [
+                    {"year": timezone.localdate().year, "cycle": cycle}
+                    for cycle, _label in YearlyPlan.CYCLE_CHOICES
+                ],
+            )
+            self.extra = 4
+        else:
+            self.extra = 0
+        super().__init__(*args, **kwargs)
+
+
 SoldierYearlyPlanInlineFormSet = inlineformset_factory(
-    Person, YearlyPlan, form=SoldierYearlyPlanInlineForm,
-    fk_name="solider", extra=1, can_delete=True,
+    Person,
+    YearlyPlan,
+    form=SoldierYearlyPlanInlineForm,
+    formset=SoldierYearlyPlanInlineFormSet,
+    fk_name="solider",
+    extra=4,
+    can_delete=True,
 )
 
 
@@ -146,23 +171,29 @@ class SportsTrainingForm(forms.ModelForm):
             "year",
             "cycle",
             "name_of_comp",
-            "type_of_comp",
             "significant_achievement",
         ]
+        labels = {
+            "name_of_comp": "Competition",
+            "significant_achievement": "Achievement",
+        }
         widgets = {
             "year": forms.NumberInput(
                 attrs={"class": "form-control", "min": "1900", "max": "2100"}
             ),
             "cycle": forms.Select(attrs={"class": "form-select"}),
-            "name_of_comp": forms.TextInput(attrs={"class": "form-control"}),
-            "type_of_comp": forms.Select(attrs={"class": "form-select"}),
-            "significant_achievement": forms.TextInput(
-                attrs={"class": "form-control"}
-            ),
+            "name_of_comp": forms.Select(attrs={"class": "form-select"}),
+            "significant_achievement": forms.Select(attrs={"class": "form-select"}),
         }
 
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.type_of_comp = competition_kind(instance.name_of_comp)
+        if commit:
+            instance.save()
+        return instance
 
-<<<<<<< HEAD
+
 SLOT_LEAVE_TYPE_NAMES = {
     LeaveState.SLOT_P_LEAVE: "Privilege Leave",
     LeaveState.SLOT_C_LEAVE_1: "Casual Leave",
@@ -190,14 +221,6 @@ def leave_type_for_slot(slot):
     else:
         name = SLOT_LEAVE_TYPE_NAMES.get(slot)
     if not name:
-=======
-def leave_type_for_slot(slot):
-    if slot == LeaveState.SLOT_P_LEAVE:
-        name = "Privilege Leave"
-    elif slot.startswith("C lve"):
-        name = "Casual Leave"
-    else:
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         return None
     leave_type, _created = LeaveType.objects.get_or_create(name=name)
     return leave_type
@@ -231,7 +254,6 @@ class LeaveApplyForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.soldier = kwargs.pop("soldier", None)
-<<<<<<< HEAD
         self.applicant = kwargs.pop("applicant", None)
         super().__init__(*args, **kwargs)
         self.fields["remarks"].required = False
@@ -265,13 +287,6 @@ class LeaveApplyForm(forms.ModelForm):
             required=True,
             help_text=help_text,
         )
-=======
-        super().__init__(*args, **kwargs)
-        self.fields["slot"].required = True
-        self.fields["slot"].label = "Leave slot"
-        self.fields["remarks"].required = False
-        self.fields["remarks"].label = "Reason / notes"
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
     def clean(self):
         cleaned = super().clean()
@@ -289,7 +304,6 @@ class LeaveApplyForm(forms.ModelForm):
                 self.add_error("slot", "Choose a valid leave slot.")
             else:
                 cleaned["leave_type"] = leave_type
-<<<<<<< HEAD
             if (
                 self.applicant
                 and self.applicant.is_clerk
@@ -301,8 +315,6 @@ class LeaveApplyForm(forms.ModelForm):
                     "slot",
                     "Company clerks can apply only for P Leave and C Leave.",
                 )
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
         if soldier and from_date and to_date:
             overlapping = LeaveState.objects.filter(
@@ -363,18 +375,11 @@ class IndividualQualForm(forms.ModelForm):
             "qual_for_next_promotion",
         ]
         widgets = {
-<<<<<<< HEAD
             "year": forms.NumberInput(
                 attrs={
                     "class": "form-control",
                     "min": 1900,
                     "max": 2100,
-=======
-            "year": forms.TextInput(
-                attrs={
-                    "class": "form-control",
-                    "maxlength": "4",
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
                     "placeholder": "2026",
                 }
             ),
@@ -434,34 +439,49 @@ class IndividualQualCourseForm(forms.ModelForm):
                     "data-qual-course": "1",
                 }
             ),
-            "result": forms.TextInput(
+            "result": forms.Select(
                 attrs={
-                    "class": "form-control",
-                    "placeholder": "Pass, Fail, Qualified",
+                    "class": "form-select",
+                    "data-qual-result": "1",
                 }
             ),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["course_name"].label = "Course name"
+        self.fields["course_name"].label = "Course / cadre"
         self.fields["course_name"].queryset = (
             IndividualCourseName.objects.select_related("level")
         )
         self.fields["course_name"].label_from_instance = lambda obj: obj.name
+        self.fields["result"].choices = [("", "---------")] + list(
+            CADRE_RESULT_CHOICES
+        )
         instance = getattr(self, "instance", None)
         if instance and instance.pk and instance.course_name_id:
             self.fields["course_level"].initial = instance.course_name.level_id
+            self.fields["result"].choices = [("", "---------")] + list(
+                result_choices_for_level(instance.course_name.level.name)
+            )
 
     def clean(self):
         cleaned = super().clean()
         course = cleaned.get("course_name")
         level = cleaned.get("course_level")
+        result = cleaned.get("result")
         if course and level and course.level_id != level.pk:
             self.add_error(
                 "course_name",
                 "This course does not belong to the selected level.",
             )
+        if course and result:
+            allowed = {value for value, _label in result_choices_for_level(course.level.name)}
+            if result not in allowed:
+                kind = "cadre" if is_cadre_level(course.level.name) else "course"
+                self.add_error(
+                    "result",
+                    f"Choose a valid {kind} result.",
+                )
         return cleaned
 
 

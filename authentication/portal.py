@@ -34,8 +34,14 @@ PORTAL_SECTIONS = {
             },
             {
                 "title": "Create Organization",
-                "text": "Add battalion, company, and other unit structures.",
+                "text": "Add companies, platoons, and sections under the unit.",
                 "url_name": "common:create_organization",
+                "admin_only": True,
+            },
+            {
+                "title": "Create ERE Organization",
+                "text": "Add named ERE destinations. Postings to these organizations wait for the CO to approve and accept.",
+                "url_name": "common:create_ere",
                 "admin_only": True,
             },
             {
@@ -51,15 +57,6 @@ PORTAL_SECTIONS = {
                 "admin_only": True,
             },
             {
-<<<<<<< HEAD
-=======
-                "title": "Server Monitoring",
-                "text": "Check CPU, memory, disk, and host resource usage.",
-                "url_name": "common:server_monitor",
-                "admin_only": True,
-            },
-            {
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
                 "title": "Statistics",
                 "text": "Personnel, ranks, reports, and other unit counts.",
                 "url_name": "common:statistics",
@@ -159,12 +156,12 @@ PORTAL_SECTIONS = {
         "items": [
             {
                 "title": "Daily Parade State",
-                "text": "Authorized, posted, absent, and present strength with absence details.",
+                "text": "Enter authorized, posted, and absent strength by company.",
                 "url_name": "duty:parade_state_list",
             },
             {
                 "title": "Soldier Posting",
-                "text": "CO posts a soldier. An officer of the receiving unit accepts him.",
+                "text": "Company officers post a soldier. The receiving company accepts him; ERE postings wait for the CO.",
                 "url_name": "duty:posting_list",
                 "roles": ("admin", "co", "officer"),
             },
@@ -176,7 +173,7 @@ PORTAL_SECTIONS = {
             },
             {
                 "title": "Duty Map",
-                "text": "CO view of who is standing which post on OpenStreetMap.",
+                "text": "CO view of who is standing which post on the live duty map.",
                 "url_name": "duty:map",
                 "roles": ("admin", "co"),
             },
@@ -235,7 +232,6 @@ def _items(section, *titles):
 
 
 PORTAL_SECTIONS = {
-<<<<<<< HEAD
     "dashboard": {
         "label": "Dashboard",
         "icon": "bi-flag",
@@ -243,20 +239,18 @@ PORTAL_SECTIONS = {
         "landing_url_name": "authentication:home",
         "items": [],
     },
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
     "a-matter": {
         "label": "A Matter",
         "icon": "bi-people",
         "description": "Personnel, leave, parade state, duty state, postings, and service particulars.",
         "path_prefixes": (
-            "/soldiers", "/training/leave", "/parade-state", "/postings",
-            "/duty/", "/duty/assign", "/duty/map",
+            "/soldiers", "/search", "/training/leave", "/parade-state", "/postings",
+            "/duty/", "/duty/assign", "/duty/map", "/duty/roster",
         ),
         "items": [
             {
                 "title": "Parade State",
-                "text": "View authorized, posted, absent, and present battalion strength.",
+                "text": "Enter authorized, posted, and absent strength by company.",
                 "url_name": "duty:parade_state_list",
             },
             {
@@ -270,9 +264,32 @@ PORTAL_SECTIONS = {
                 "url_name": "duty:home",
             },
             {
+                "title": "Daily Duty Roster",
+                "text": "Officer daily duty roster with named roll and PDF export.",
+                "url_name": "duty:roster_daily",
+                "roles": ("admin", "co", "officer"),
+            },
+            {
+                "title": "Monthly Duty Roster",
+                "text": "Officer monthly summary of soldier and post duty days.",
+                "url_name": "duty:roster_monthly",
+                "roles": ("admin", "co", "officer"),
+            },
+            {
                 "title": "Posting Record",
-                "text": "View current and historical soldier posting records.",
+                "text": "Company posting orders, receiving-company acceptance, and CO approval for ERE.",
                 "url_name": "duty:posting_list",
+            },
+            {
+                "title": "ERE Organizations",
+                "text": "Add named ERE destinations. Postings to these organizations wait for the CO to approve and accept.",
+                "url_name": "common:create_ere",
+                "roles": ("admin", "co"),
+            },
+            {
+                "title": "Unit Search",
+                "text": "Ask across every soldier field: courses, leave, duty, rank, and company.",
+                "url_name": "common:search",
             },
             {
                 "title": "Svc Particulars",
@@ -295,10 +312,7 @@ PORTAL_SECTIONS = {
     "q-matter": {
         "label": "Q Matter",
         "icon": "bi-box-seam",
-<<<<<<< HEAD
         "admin_only": True,
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         "description": "Quartermaster stores, equipment, transport, and logistics administration.",
         "landing_url_name": "duty:post_list",
         "path_prefixes": ("/duty/posts",),
@@ -316,8 +330,7 @@ PORTAL_SECTIONS = {
         "label": "Misc",
         "icon": "bi-grid",
         "description": "User administration, master data, logs, monitoring, and miscellaneous services.",
-<<<<<<< HEAD
-        "path_prefixes": ("/users", "/dashboard"),
+        "path_prefixes": ("/users", "/dashboard", "/ranks", "/organizations", "/ere", "/education-levels"),
         "items": [
             {
                 "title": "Manage Dashboard",
@@ -329,11 +342,6 @@ PORTAL_SECTIONS = {
                 item for item in _MODULE_SECTIONS["admin"]["items"]
                 if item["title"] != "Duty Posts"
             ],
-=======
-        "items": [
-            item for item in _MODULE_SECTIONS["admin"]["items"]
-            if item["title"] != "Duty Posts"
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         ],
     },
 }
@@ -358,7 +366,6 @@ def get_portal_context(request):
 
     default_section = "a-matter"
     section_key = request.GET.get("section")
-<<<<<<< HEAD
     home_path = reverse("authentication:home")
 
     if not section_key:
@@ -373,23 +380,10 @@ def get_portal_context(request):
                 ):
                     section_key = key
                     break
-=======
-
-    if not section_key:
-        for key, data in visible_sections.items():
-            prefixes = data.get("path_prefixes") or ()
-            if any(
-                request.path == prefix or request.path.startswith(prefix + "/")
-                for prefix in prefixes
-            ):
-                section_key = key
-                break
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
     if section_key not in visible_sections:
         section_key = default_section
 
-<<<<<<< HEAD
     user_role = getattr(request.user, "role", "")
     user_is_co = bool(getattr(request.user, "is_co", False))
 
@@ -421,44 +415,13 @@ def get_portal_context(request):
         section_key = "a-matter" if "a-matter" in visible_sections else next(iter(visible_sections))
         section = visible_sections[section_key]
         items = visible_items_for(section)
-=======
-    section = visible_sections[section_key]
-    items = []
-
-    user_role = getattr(request.user, "role", "")
-    user_is_co = bool(getattr(request.user, "is_co", False))
-
-    for item in section["items"]:
-        if item.get("admin_only") and not is_admin:
-            continue
-        allowed_roles = item.get("roles")
-        if allowed_roles and not is_admin:
-            if user_role not in allowed_roles and not (
-                user_is_co and "co" in allowed_roles
-            ):
-                continue
-
-        entry = {
-            "title": item["title"],
-            "text": item["text"],
-            "url": None,
-        }
-
-        if item.get("url_name"):
-            entry["url"] = reverse(item["url_name"])
-
-        items.append(entry)
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
     sidebar = []
 
     for key, data in visible_sections.items():
-<<<<<<< HEAD
         preview_items = visible_items_for(data)
         if not preview_items and key != "dashboard":
             continue
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         landing_url_name = data.get("landing_url_name")
         if landing_url_name:
             section_url = reverse(landing_url_name)

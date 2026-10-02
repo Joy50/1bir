@@ -4,6 +4,8 @@ import django.db.models.deletion
 from django.conf import settings
 from django.db import migrations, models
 
+from common.compat import make_check_constraint
+
 
 class Migration(migrations.Migration):
 
@@ -42,7 +44,7 @@ class Migration(migrations.Migration):
                 'verbose_name': 'Leave State',
                 'verbose_name_plural': 'Leave States',
                 'ordering': ['-from_date'],
-                'constraints': [models.CheckConstraint(condition=models.Q(('to_date__gte', models.F('from_date'))), name='leave_state_valid_dates')],
+                'constraints': [make_check_constraint(models.Q(('to_date__gte', models.F('from_date'))), 'leave_state_valid_dates')],
             },
         ),
     ]

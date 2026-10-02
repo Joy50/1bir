@@ -7,12 +7,8 @@
   <div class="section-eyebrow">Training // Individual Qualification</div>
   <h1>Edit Individual Qualification</h1>
   <p class="text-secondary mb-0">
-<<<<<<< HEAD
     Year, SPL, and next promotion are saved for {{ soldier.name }} in {{ selected_year }}.
-=======
-    Year, SPL, and next promotion are saved once for {{ soldier.name }}.
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
-    Add as many course levels and course names with results as needed.
+    Add cadre and course names from the dropdowns. Cadre results are A, B+, B, or Pass. Course results are A, B+, or B.
   </p>
 </div>
 
@@ -79,7 +75,7 @@
 
       <section class="qual-level-part" data-formset="{{ formset.prefix }}" style="margin-top: 0.5rem;">
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <div class="form-eyebrow mb-0">Courses</div>
+          <div class="form-eyebrow mb-0">Cadres &amp; Courses</div>
           <button type="button" class="btn btn-add-inline" data-add-formset="{{ formset.prefix }}">
             Add more
           </button>
@@ -120,6 +116,27 @@
     document.getElementById("qual-courses-data").textContent
   );
 
+  function filterResultSelect(row, kind) {
+    const resultSelect = row.querySelector("[data-qual-result]");
+    if (!resultSelect) {
+      return;
+    }
+    const selected = resultSelect.value;
+    const options = kind === "course"
+      ? [["A", "A"], ["B+", "B+"], ["B", "B"]]
+      : [["A", "A"], ["B+", "B+"], ["B", "B"], ["Pass", "Pass"]];
+    resultSelect.innerHTML = '<option value="">---------</option>';
+    options.forEach(function (item) {
+      const option = document.createElement("option");
+      option.value = item[0];
+      option.textContent = item[1];
+      if (item[0] === selected) {
+        option.selected = true;
+      }
+      resultSelect.appendChild(option);
+    });
+  }
+
   function filterCourseSelect(levelSelect) {
     const row = levelSelect.closest(".inline-form");
     if (!row) {
@@ -142,6 +159,7 @@
       }
       courseSelect.appendChild(option);
     });
+    filterResultSelect(row, courses.length ? courses[0].result_kind : "cadre");
   }
 
   function bindExistingRows() {

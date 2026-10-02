@@ -1,7 +1,15 @@
 from datetime import date
 
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
+
+
+def make_check_constraint(expression, name):
+    """CheckConstraint: Django 4.x uses check=, Django 5.1+ uses condition=."""
+    try:
+        return models.CheckConstraint(check=expression, name=name)
+    except TypeError:
+        return models.CheckConstraint(condition=expression, name=name)
 
 
 class Rank(models.Model):
@@ -29,36 +37,35 @@ class Rank(models.Model):
 
 
 class Organization(models.Model):
-<<<<<<< HEAD
     KIND_UNIT = "unit"
-    KIND_BATTALION = "battalion"
     KIND_COMPANY = "company"
     KIND_PLATOON = "platoon"
     KIND_SECTION = "section"
+    KIND_ERE = "ere"
     KIND_CHOICES = [
         (KIND_UNIT, "Unit"),
-        (KIND_BATTALION, "Battalion"),
         (KIND_COMPANY, "Company"),
         (KIND_PLATOON, "Platoon"),
         (KIND_SECTION, "Section"),
+        (KIND_ERE, "ERE"),
     ]
+    POSTING_KINDS = frozenset({KIND_COMPANY, KIND_PLATOON, KIND_SECTION, KIND_ERE})
+    POSTING_ORDER_KINDS = frozenset({KIND_COMPANY, KIND_ERE})
     PARENT_KINDS = {
         KIND_UNIT: frozenset(),
-        KIND_BATTALION: frozenset({KIND_UNIT}),
-        KIND_COMPANY: frozenset({KIND_BATTALION}),
+        KIND_COMPANY: frozenset({KIND_UNIT}),
         KIND_PLATOON: frozenset({KIND_COMPANY}),
         KIND_SECTION: frozenset({KIND_PLATOON}),
+        KIND_ERE: frozenset({KIND_UNIT}),
     }
     CHILD_KIND = {
         None: KIND_UNIT,
-        KIND_UNIT: KIND_BATTALION,
-        KIND_BATTALION: KIND_COMPANY,
+        KIND_UNIT: KIND_COMPANY,
         KIND_COMPANY: KIND_PLATOON,
         KIND_PLATOON: KIND_SECTION,
     }
+    HQ_COMPANY_NAME = "HQ Company"
 
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
     organization_name = models.CharField(max_length=100)
     parent_organization = models.ForeignKey(
         "self",
@@ -67,13 +74,17 @@ class Organization(models.Model):
         blank=True,
         null=True,
     )
-<<<<<<< HEAD
     unit_kind = models.CharField(
         "organization type",
         max_length=20,
         choices=KIND_CHOICES,
         default=KIND_UNIT,
-        help_text="Unit → Battalion → Company → Platoon → Section.",
+        help_text="Unit → Company → Platoon → Section. ERE organizations sit under the Unit.",
+    )
+    authorized_strength = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Company establishment (PE) by parade column. Unused on other types.",
     )
 
     class Meta:
@@ -88,27 +99,42 @@ class Organization(models.Model):
                 condition=models.Q(parent_organization__isnull=True),
                 name="unique_root_organization_name",
             ),
+            models.UniqueConstraint(
+                fields=["unit_kind"],
+                condition=models.Q(unit_kind="unit"),
+                name="unique_unit_organization",
+            ),
         ]
-=======
-
-    class Meta:
-        ordering = ["organization_name"]
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
     def __str__(self):
         return self.organization_name
 
-<<<<<<< HEAD
+    @property
+    def is_posting_place(self):
+        return self.unit_kind in self.POSTING_KINDS
+
+    @property
+    def is_ere(self):
+        return self.unit_kind == self.KIND_ERE
+
     def allowed_parent_kinds(self):
         return self.PARENT_KINDS.get(self.unit_kind, frozenset())
 
     def allows_root_parent(self):
-        return self.unit_kind in {self.KIND_UNIT, self.KIND_BATTALION}
+        return self.unit_kind == self.KIND_UNIT
 
     def clean(self):
         super().clean()
         parent = self.parent_organization
         allowed_parents = self.allowed_parent_kinds()
+        if self.unit_kind == self.KIND_UNIT:
+            siblings = Organization.objects.filter(unit_kind=self.KIND_UNIT)
+            if self.pk:
+                siblings = siblings.exclude(pk=self.pk)
+            if siblings.exists():
+                raise ValidationError(
+                    {"unit_kind": "This installation already has a Unit. 1 BIR is the only unit."}
+                )
         if parent is None:
             if not self.allows_root_parent():
                 raise ValidationError(
@@ -158,8 +184,68 @@ class Organization(models.Model):
             return kinds[0]
         return " or ".join(kinds)
 
-=======
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
+
+class EREOrganization(models.Model):
+    """Named extra-regimental employment destinations a soldier can be posted to."""
+
+    name = models.CharField(max_length=150, unique=True)
+    organization = models.OneToOneField(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name="ere_entry",
+        editable=False,
+    )
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "ERE organization"
+        verbose_name_plural = "ERE organizations"
+
+    def __str__(self):
+        return self.name
+
+    def clean(self):
+        super().clean()
+        name = (self.name or "").strip()
+        if not name:
+            raise ValidationError({"name": "Enter the name of the ERE organization."})
+        self.name = name
+        if not self.organization_id:
+            unit = Organization.objects.filter(unit_kind=Organization.KIND_UNIT).first()
+            if unit is None:
+                raise ValidationError(
+                    "Create the Unit before adding ERE organizations."
+                )
+
+    def save(self, *args, **kwargs):
+        self.name = (self.name or "").strip()
+        with transaction.atomic():
+            if not self.organization_id:
+                unit = Organization.objects.filter(
+                    unit_kind=Organization.KIND_UNIT
+                ).first()
+                if unit is None:
+                    raise ValidationError(
+                        "Create the Unit before adding ERE organizations."
+                    )
+                org = Organization(
+                    organization_name=self.name,
+                    parent_organization=unit,
+                    unit_kind=Organization.KIND_ERE,
+                )
+                org.full_clean()
+                org.save()
+                self.organization = org
+            super().save(*args, **kwargs)
+            org = self.organization
+            if (
+                org.organization_name != self.name
+                or org.unit_kind != Organization.KIND_ERE
+            ):
+                org.organization_name = self.name
+                org.unit_kind = Organization.KIND_ERE
+                org.save(update_fields=["organization_name", "unit_kind"])
+
 
 class CivilEducationLevel(models.Model):
     level_name = models.CharField(max_length=100, unique=True)
@@ -171,11 +257,20 @@ class CivilEducationLevel(models.Model):
         return self.level_name
 
 
+class PersonQuerySet(models.QuerySet):
+    def on_strength(self):
+        return self.filter(on_strength=True)
+
+
 class Person(models.Model):
     AL1_CHOICES = [
         ("Yes", "Yes"),
         ("No", "No"),
     ]
+    HEIGHT_FEET_CHOICES = [(value, str(value)) for value in range(1, 13)]
+    HEIGHT_INCH_CHOICES = [(value, str(value)) for value in range(1, 13)]
+
+    objects = PersonQuerySet.as_manager()
 
     name = models.CharField(max_length=100)
     army_number = models.CharField(max_length=20, unique=True)
@@ -209,7 +304,17 @@ class Person(models.Model):
     discipline = models.TextField(blank=True, null=True)
     punishment = models.TextField(blank=True, null=True)
     mission = models.BooleanField(default=False)
-    height = models.CharField(max_length=30, blank=True)
+    on_strength = models.BooleanField(default=True)
+    height_feet = models.PositiveSmallIntegerField(
+        blank=True,
+        null=True,
+        choices=HEIGHT_FEET_CHOICES,
+    )
+    height_inches = models.PositiveSmallIntegerField(
+        blank=True,
+        null=True,
+        choices=HEIGHT_INCH_CHOICES,
+    )
     overweight = models.CharField(max_length=30, blank=True)
     qualification_for_next_rank = models.BooleanField(default=False)
     reason_unqualified = models.TextField(blank=True)
@@ -237,20 +342,38 @@ class Person(models.Model):
     class Meta:
         ordering = ["army_number"]
         constraints = [
-            models.CheckConstraint(
-                condition=models.Q(doe__gt=models.F("dob")),
-                name="person_doe_after_dob",
+            make_check_constraint(
+                models.Q(doe__gt=models.F("dob")),
+                "person_doe_after_dob",
             ),
         ]
 
     def __str__(self):
         return f"{self.army_number} {self.name}"
 
+    @property
+    def height_display(self):
+        parts = []
+        if self.height_feet is not None:
+            parts.append(f"{self.height_feet} ft")
+        if self.height_inches is not None:
+            parts.append(f"{self.height_inches} in")
+        return " ".join(parts)
+
     def clean(self):
         super().clean()
         if self.dob and self.doe and self.doe <= self.dob:
             raise ValidationError({"doe": "Date of enrollment must be after date of birth."})
-<<<<<<< HEAD
+        organization = self.organization
+        if organization is not None and not organization.is_posting_place:
+            raise ValidationError(
+                {
+                    "organization": (
+                        "A soldier is posted to a company, platoon, section, or ERE organization. "
+                        "Unit HQ staff belong in HQ Company."
+                    )
+                }
+            )
         self._normalize_optional_unique_fields()
 
     def _normalize_optional_unique_fields(self):
@@ -274,40 +397,15 @@ class Person(models.Model):
         self._normalize_optional_unique_fields()
         self.present_age = self.years_since(self.dob)
         self.present_service_years = self.years_since(self.doe)
-=======
-
-    def save(self, *args, **kwargs):
-        today = date.today()
-        if self.dob:
-            self.present_age = (
-                today.year
-                - self.dob.year
-                - ((today.month, today.day) < (self.dob.month, self.dob.day))
-            )
-        if self.doe:
-            self.present_service_years = (
-                today.year
-                - self.doe.year
-                - ((today.month, today.day) < (self.doe.month, self.doe.day))
-            )
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
         super().save(*args, **kwargs)
 
     @property
     def age(self):
-<<<<<<< HEAD
         return self.years_since(self.dob)
 
     @property
     def service_years(self):
         return self.years_since(self.doe)
-=======
-        return self.present_age
-
-    @property
-    def service_years(self):
-        return self.present_service_years
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
 
     @property
     def civil_education(self):
@@ -393,6 +491,15 @@ class Person(models.Model):
 
 
 class ServiceHistory(models.Model):
+    TRADE_COOK = "COOK"
+    TRADE_CLK = "CLK"
+    TRADE_GD = "GD"
+    TRADE_CHOICES = [
+        (TRADE_COOK, "COOK"),
+        (TRADE_CLK, "CLK"),
+        (TRADE_GD, "GD"),
+    ]
+
     person = models.ForeignKey(
         Person,
         on_delete=models.CASCADE,
@@ -400,20 +507,17 @@ class ServiceHistory(models.Model):
     )
     organization = models.ForeignKey(Organization, on_delete=models.PROTECT)
     rank = models.ForeignKey(Rank, on_delete=models.PROTECT)
+    trade = models.CharField(max_length=8, choices=TRADE_CHOICES, blank=True)
     start_date = models.DateField()
     end_date = models.DateField(blank=True, null=True)
 
     class Meta:
         ordering = ["-start_date"]
         constraints = [
-            models.CheckConstraint(
-                condition=models.Q(end_date__isnull=True)
-<<<<<<< HEAD
+            make_check_constraint(
+                models.Q(end_date__isnull=True)
                 | models.Q(end_date__gte=models.F("start_date")),
-=======
-                | models.Q(end_date__gt=models.F("start_date")),
->>>>>>> 3bffeeaa23060e7395f7dcc79039b760bdbd78bf
-                name="service_history_valid_dates",
+                "service_history_valid_dates",
             ),
         ]
 
@@ -436,10 +540,10 @@ class CivilEducation(models.Model):
     class Meta:
         ordering = ["-from_date"]
         constraints = [
-            models.CheckConstraint(
-                condition=models.Q(to_date__isnull=True)
+            make_check_constraint(
+                models.Q(to_date__isnull=True)
                 | models.Q(to_date__gt=models.F("from_date")),
-                name="civil_education_valid_dates",
+                "civil_education_valid_dates",
             ),
         ]
 
@@ -457,10 +561,10 @@ class MedicalCategory(models.Model):
     class Meta:
         ordering = ["-from_date"]
         constraints = [
-            models.CheckConstraint(
-                condition=models.Q(to_date__isnull=True)
+            make_check_constraint(
+                models.Q(to_date__isnull=True)
                 | models.Q(to_date__gt=models.F("from_date")),
-                name="medical_category_valid_dates",
+                "medical_category_valid_dates",
             ),
         ]
 
@@ -499,10 +603,10 @@ class AppointmentHistory(models.Model):
     class Meta:
         ordering = ["-start_date"]
         constraints = [
-            models.CheckConstraint(
-                condition=models.Q(end_date__isnull=True)
+            make_check_constraint(
+                models.Q(end_date__isnull=True)
                 | models.Q(end_date__gt=models.F("start_date")),
-                name="appointment_valid_dates",
+                "appointment_valid_dates",
             ),
         ]
 
@@ -528,19 +632,40 @@ class MobileNumber(models.Model):
 
 
 class Family(models.Model):
+    RELATION_FATHER = "father"
+    RELATION_MOTHER = "mother"
+    RELATION_WIFE = "wife"
+    RELATION_HUSBAND = "husband"
+    RELATION_SON = "son"
+    RELATION_DAUGHTER = "daughter"
+    RELATION_BROTHER = "brother"
+    RELATION_SISTER = "sister"
+    RELATION_CHOICES = [
+        (RELATION_FATHER, "Father"),
+        (RELATION_MOTHER, "Mother"),
+        (RELATION_WIFE, "Wife"),
+        (RELATION_HUSBAND, "Husband"),
+        (RELATION_SON, "Son"),
+        (RELATION_DAUGHTER, "Daughter"),
+        (RELATION_BROTHER, "Brother"),
+        (RELATION_SISTER, "Sister"),
+    ]
+
     person = models.ForeignKey(
         Person,
         on_delete=models.CASCADE,
         related_name="family_members",
     )
-    relation_name = models.CharField(max_length=150)
+    relation = models.CharField(max_length=20, choices=RELATION_CHOICES)
+    name = models.CharField(max_length=150)
+    mobile_number = models.CharField(max_length=15, blank=True)
     occupation = models.CharField(max_length=150, blank=True)
     remarks = models.TextField(blank=True)
 
     class Meta:
-        ordering = ["relation_name", "id"]
+        ordering = ["relation", "name", "id"]
         verbose_name = "Family member"
         verbose_name_plural = "Family members"
 
     def __str__(self):
-        return f"{self.person} - {self.relation_name}"
+        return f"{self.get_relation_display()}: {self.name}"

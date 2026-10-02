@@ -1,0 +1,24 @@
+<section class="inline-section" data-formset="{{ prefix }}">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="form-eyebrow mb-0">{{ title }}</div>
+    <button type="button" class="btn btn-add-inline" data-add-formset="{{ prefix }}">
+      Add more
+    </button>
+  </div>
+
+  {{ formset.management_form }}
+
+  {% if formset.non_form_errors %}
+    <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+  {% endif %}
+
+  <div class="inline-forms" id="{{ prefix }}-forms">
+    {% for form in formset %}
+      {% include "common/partials/person_formset_row.html" with form=form %}
+    {% endfor %}
+  </div>
+
+  <template id="{{ prefix }}-empty">
+    {% include "common/partials/person_formset_row.html" with form=formset.empty_form %}
+  </template>
+</section>

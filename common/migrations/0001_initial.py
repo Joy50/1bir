@@ -1,5 +1,7 @@
-from django.db import migrations, models
 import django.db.models.deletion
+from django.db import migrations, models
+
+from common.compat import make_check_constraint
 
 
 class Migration(migrations.Migration):
@@ -62,7 +64,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name="person",
-            constraint=models.CheckConstraint(condition=models.Q(("doe__gt", models.F("dob"))), name="person_doe_after_dob"),
+            constraint=make_check_constraint(models.Q(("doe__gt", models.F("dob"))), "person_doe_after_dob"),
         ),
         migrations.CreateModel(
             name="ServiceHistory",
