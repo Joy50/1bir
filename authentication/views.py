@@ -73,6 +73,11 @@ class OfficerActionMixin(RoleRequiredMixin):
     permission_message = "Only officers can accept postings or complete this action."
 
 
+class PostingCreateMixin(RoleRequiredMixin):
+    allowed_roles = (User.ROLE_ADMIN, User.ROLE_CO, User.ROLE_OFFICER)
+    permission_message = "Only a company officer, the CO, or an admin can generate a posting order."
+
+
 class DutyAssignMixin(RoleRequiredMixin):
     allowed_roles = (User.ROLE_ADMIN, User.ROLE_CO, User.ROLE_OFFICER)
     permission_message = "Only officers or the CO can assign duty."

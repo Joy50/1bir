@@ -1,7 +1,10 @@
 asgiref
 charset-normalizer
 Django>=4.0.6
+<<<<<<< HEAD
 fonttools
+=======
+>>>>>>> backup/local-full-wip
 openpyxl
 pillow
 reportlab

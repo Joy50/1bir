@@ -53,9 +53,7 @@
   const startLat = parseFloat(latField.value) || {{ map_lat|default:"21.4324" }};
   const startLng = parseFloat(lngField.value) || {{ map_lng|default:"92.1008" }};
   const map = L.map("post-picker-map").setView([startLat, startLng], {{ map_zoom|default:15 }});
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "&copy; OpenStreetMap"
-  }).addTo(map);
+  {% autoescape off %}{% include "duty/partials/leaflet_basemap.js" %}{% endautoescape %}
   let marker = L.marker([startLat, startLng], {draggable: true}).addTo(map);
   function sync(latlng) {
     latField.value = latlng.lat.toFixed(6);

@@ -124,6 +124,33 @@ class SoldierPosting(models.Model):
     def __str__(self):
         return f"{self.soldier} → {self.to_organization}"
 
+    @property
+    def requires_co_decision(self):
+        destination = self.to_organization
+        return bool(destination and destination.is_ere)
+
+    @property
+    def status_label(self):
+        if self.status == self.STATUS_PENDING and self.requires_co_decision:
+            return "Pending CO approval"
+        return self.get_status_display()
+
+    def can_be_decided_by(self, user):
+        if not getattr(user, "is_authenticated", False):
+            return False
+        if getattr(user, "is_admin", False):
+            return True
+        if self.requires_co_decision:
+            return getattr(user, "is_co", False)
+        if getattr(user, "is_co", False) or not getattr(user, "is_officer", False):
+            return False
+        from common.scoping import get_accessible_organization_ids
+
+        allowed_ids = get_accessible_organization_ids(user)
+        if allowed_ids is None:
+            return True
+        return self.to_organization_id in allowed_ids
+
 
 class DutyTour(models.Model):
     STATUS_OPEN = "open"
@@ -272,6 +299,7 @@ class ParadeStateCompany(models.Model):
         on_delete=models.PROTECT,
         related_name="parade_state_entries",
     )
+    authorized_strength = models.JSONField(default=dict, blank=True)
     posted_strength = models.JSONField(default=dict, blank=True)
     absent_strength = models.JSONField(default=dict, blank=True)
     absence_details = models.JSONField(default=dict, blank=True)

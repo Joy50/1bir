@@ -6,7 +6,7 @@
 <div class="section-header">
   <div class="section-eyebrow">Misc · Master data</div>
   <h1>{{ page_title }}</h1>
-  <p class="text-secondary mb-0">Organization type follows Unit → Battalion → Company → Platoon → Section.</p>
+  <p class="text-secondary mb-0">Organization type follows Unit → Company → Platoon → Section. Add ERE organization names on ERE Organizations. Soldiers are posted to a company, platoon, section, or ERE — never to the unit itself.</p>
 </div>
 <div class="row g-4">
   <div class="col-lg-5">
@@ -75,10 +75,15 @@
     const kindMap = JSON.parse(document.getElementById("org-kind-map").textContent || "{}");
     const parentKinds = {
       unit: [],
+<<<<<<< HEAD
       battalion: ["unit"],
       company: ["battalion", "unit"],
+=======
+      company: ["unit"],
+>>>>>>> backup/local-full-wip
       platoon: ["company"],
       section: ["platoon"],
+      ere: ["unit"],
     };
     const originalOptions = Array.from(parentField.options).map(function (option) {
       return { value: option.value, text: option.text };
@@ -88,7 +93,7 @@
       const kind = kindField.value;
       const allowed = parentKinds[kind] || [];
       const current = parentField.value;
-      const keepBlank = kind === "unit" || kind === "battalion";
+      const keepBlank = kind === "unit";
       parentField.innerHTML = "";
       originalOptions.forEach(function (option) {
         if (!option.value) {

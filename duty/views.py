@@ -3,6 +3,7 @@ import json
 from datetime import date, timedelta
 
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
@@ -15,23 +16,39 @@ from authentication.views import (
     AdminRequiredMixin,
     CoRequiredMixin,
     DutyAssignMixin,
-    OfficerActionMixin,
     PortalContextMixin,
+    PostingCreateMixin,
 )
 from common.activity import log_addition, log_change, log_deletion
-from common.models import Organization, Person, ServiceHistory
+from common.models import Person, ServiceHistory
 from common.http import safe_redirect_target
 from common.scoping import (
     collect_descendant_ids,
     get_accessible_companies,
     get_accessible_organization_ids,
+<<<<<<< HEAD
     get_accessible_organizations,
     get_battalion,
+=======
+>>>>>>> backup/local-full-wip
     get_parade_organizations,
+    get_posting_organizations,
+    get_posting_record_organizations,
+    get_unit,
 )
 from common.views import SoldierAccessMixin
 
+<<<<<<< HEAD
 from .forms import DutyAssignForm, DutyPostForm, ParadeAbsenceDocumentForm, SoldierPostingForm
+=======
+from .forms import (
+    DutyAssignForm,
+    DutyPostForm,
+    ParadeAbsenceDocumentForm,
+    ParadeStateCreateForm,
+    SoldierPostingForm,
+)
+>>>>>>> backup/local-full-wip
 from .models import (
     PARADE_ABSENCE_COLUMNS,
     PARADE_RANK_COLUMNS,
@@ -40,6 +57,10 @@ from .models import (
     DutyTour,
     ParadeAbsenceDocument,
     ParadeState,
+<<<<<<< HEAD
+=======
+    ParadeStateCompany,
+>>>>>>> backup/local-full-wip
     SoldierPosting,
 )
 from authentication.portal import get_portal_context
@@ -48,7 +69,12 @@ from .services import (
     RAMU_LAT,
     RAMU_LNG,
     get_or_create_open_tour,
+<<<<<<< HEAD
     build_parade_counts,
+=======
+    company_authorized_counts,
+    empty_rank_counts,
+>>>>>>> backup/local-full-wip
     generate_parade_state,
     map_markers,
     rollup_posted_totals,
@@ -317,7 +343,11 @@ class SoldierPostingListView(SoldierAccessMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+<<<<<<< HEAD
         companies = get_accessible_companies(self.request.user)
+=======
+        companies = get_posting_record_organizations(self.request.user)
+>>>>>>> backup/local-full-wip
         company_value = self.request.GET.get("company", "")
         selected_company = None
         if company_value.isdigit():
@@ -327,7 +357,7 @@ class SoldierPostingListView(SoldierAccessMixin, ListView):
 
         soldier_rows = []
         if selected_company:
-            soldiers = Person.objects.filter(
+            soldiers = Person.objects.on_strength().filter(
                 organization_id__in=collect_descendant_ids(selected_company)
             ).select_related("rank", "organization", "organization__parent_organization").order_by(
                 "army_number"
@@ -365,13 +395,23 @@ class SoldierPostingListView(SoldierAccessMixin, ListView):
                 soldier_rows.append({
                     "soldier": soldier,
                     "platoon": (
-                        "Coy HQ" if soldier.organization_id == selected_company.pk
-                        else soldier.organization.organization_name
+                        "—" if selected_company.is_ere
+                        else (
+                            "Coy HQ" if soldier.organization_id == selected_company.pk
+                            else soldier.organization.organization_name
+                        )
                     ),
-                    "current_unit": selected_company,
+                    "current_unit": (
+                        (selected_company.parent_organization or selected_company)
+                        if selected_company.is_ere
+                        else selected_company
+                    ),
                     "current_att_ere": (
-                        "" if soldier.organization_id == selected_company.pk
-                        else soldier.organization.organization_name
+                        selected_company.organization_name if selected_company.is_ere
+                        else (
+                            "" if soldier.organization_id == selected_company.pk
+                            else soldier.organization.organization_name
+                        )
                     ),
                     "current_history": current_history,
                     "previous_history": previous_history,
@@ -384,12 +424,15 @@ class SoldierPostingListView(SoldierAccessMixin, ListView):
             "selected_company": selected_company,
             "soldier_rows": soldier_rows,
         })
-        context["can_post"] = self.request.user.can_command
-        context["can_accept"] = self.request.user.can_accept_posting
+        user = self.request.user
+        for posting in context["postings"]:
+            posting.user_can_decide = posting.can_be_decided_by(user)
+        context["can_post"] = user.can_create_posting
+        context["can_accept"] = user.can_accept_posting
         return context
 
 
-class SoldierPostingCreateView(PortalContextMixin, CoRequiredMixin, CreateView):
+class SoldierPostingCreateView(PortalContextMixin, PostingCreateMixin, CreateView):
     model = SoldierPosting
     form_class = SoldierPostingForm
     template_name = "duty/posting_form.html"
@@ -398,7 +441,7 @@ class SoldierPostingCreateView(PortalContextMixin, CoRequiredMixin, CreateView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["soldier_queryset"] = scoped_soldiers(self.request.user)
-        kwargs["organization_queryset"] = Organization.objects.all()
+        kwargs["organization_queryset"] = get_posting_organizations(self.request.user)
         return kwargs
 
     def form_valid(self, form):
@@ -413,23 +456,41 @@ class SoldierPostingCreateView(PortalContextMixin, CoRequiredMixin, CreateView):
             posting,
             f"Posted {posting.soldier} to {posting.to_organization}.",
         )
+        if posting.requires_co_decision:
+            follow_up = "The CO must approve and accept this ERE posting before the move takes effect."
+        else:
+            follow_up = (
+                "The receiving company must accept him before the move takes effect."
+            )
         messages.success(
             self.request,
-            f"{posting.soldier.name} posted to {posting.to_organization}. "
-            "An officer must accept him before the move takes effect.",
+            f"{posting.soldier.name} posted to {posting.to_organization}. {follow_up}",
         )
         return redirect(self.success_url)
 
 
-class SoldierPostingDecideView(PortalContextMixin, OfficerActionMixin, View):
+class SoldierPostingDecideView(PortalContextMixin, LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
-        queryset = SoldierPosting.objects.select_related("soldier", "to_organization")
-        allowed_ids = get_accessible_organization_ids(request.user)
-        if allowed_ids is not None:
-            queryset = queryset.filter(to_organization_id__in=allowed_ids)
-        posting = get_object_or_404(queryset, pk=kwargs["pk"])
+        posting = get_object_or_404(
+            SoldierPosting.objects.select_related(
+                "soldier", "to_organization", "from_organization"
+            ),
+            pk=kwargs["pk"],
+        )
         if posting.status != SoldierPosting.STATUS_PENDING:
             messages.error(request, "This posting has already been decided.")
+            return redirect("duty:posting_list")
+        if not posting.can_be_decided_by(request.user):
+            if posting.requires_co_decision:
+                messages.error(
+                    request,
+                    "The CO must approve and accept postings to ERE organizations.",
+                )
+            else:
+                messages.error(
+                    request,
+                    "The receiving company must accept this posted soldier.",
+                )
             return redirect("duty:posting_list")
 
         action = request.POST.get("action", "accept")
@@ -468,9 +529,14 @@ class SoldierPostingDecideView(PortalContextMixin, OfficerActionMixin, View):
                 posting.status = SoldierPosting.STATUS_ACCEPTED
                 posting.accepted_by = request.user
                 posting.save()
-                message = (
-                    f"{soldier.name} accepted into {posting.to_organization}."
-                )
+                if posting.requires_co_decision:
+                    message = (
+                        f"{soldier.name} accepted into {posting.to_organization} (ERE)."
+                    )
+                else:
+                    message = (
+                        f"{soldier.name} accepted into {posting.to_organization}."
+                    )
 
         log_change(request.user, posting.soldier, message)
         messages.success(request, message)
@@ -584,8 +650,31 @@ class DutyTourReportView(PortalContextMixin, CoRequiredMixin, View):
         return redirect("duty:map")
 
 
-class ParadeStateListView(SoldierAccessMixin, View):
+class ParadeStateListView(SoldierAccessMixin, ListView):
+    model = ParadeState
+    template_name = "duty/parade_state_list.html"
+    context_object_name = "parade_states"
+
+    def get_queryset(self):
+        return ParadeState.objects.select_related("created_by").order_by("-report_date")
+
+
+class ParadeStateCreateView(SoldierAccessMixin, View):
+    template_name = "duty/parade_state_create.html"
+
+    def get_form(self, data=None):
+        initial = {"report_date": timezone.localdate()}
+        return ParadeStateCreateForm(data, initial=initial)
+
+    def render_page(self, form):
+        context = get_portal_context(self.request)
+        context["form"] = form
+        from django.shortcuts import render
+
+        return render(self.request, self.template_name, context)
+
     def get(self, request, *args, **kwargs):
+<<<<<<< HEAD
         today = timezone.localdate()
         state = ParadeState.objects.filter(report_date=today).first()
         if state is None:
@@ -598,6 +687,15 @@ class ParadeStateListView(SoldierAccessMixin, View):
             timezone.localdate(),
             refresh=True,
         )
+=======
+        return self.render_page(self.get_form())
+
+    def post(self, request, *args, **kwargs):
+        form = self.get_form(request.POST)
+        if not form.is_valid():
+            return self.render_page(form)
+        state = generate_parade_state(request.user, form.cleaned_data["report_date"])
+>>>>>>> backup/local-full-wip
         return redirect("duty:parade_state_edit", pk=state.pk)
 
 
@@ -688,6 +786,7 @@ class ParadeStateEditView(SoldierAccessMixin, View):
                 "detail_total": sum(cell["value"] for cell in detail_cells),
             })
 
+<<<<<<< HEAD
         visible_ids = {organization.pk for organization in self.get_organizations()}
         if live is not None:
             authorized = rollup_posted_totals(live["posted"], visible_ids)
@@ -710,6 +809,46 @@ class ParadeStateEditView(SoldierAccessMixin, View):
             "rank_columns": PARADE_RANK_COLUMNS,
             "absence_columns": PARADE_ABSENCE_COLUMNS,
             "battalion_name": battalion.organization_name if battalion else "1 BIR",
+=======
+        auth_rows = []
+        authorized = {}
+        for organization in self.get_organizations():
+            entry = entries.get(organization.pk)
+            if entry and entry.authorized_strength:
+                strength = entry.authorized_strength
+            else:
+                strength = company_authorized_counts(organization)
+            cells = []
+            row_total = 0
+            for key, label in PARADE_RANK_COLUMNS:
+                field_name = f"auth_{organization.pk}_{key}"
+                value = self.number(
+                    posted.get(field_name) if posted is not None else strength.get(key)
+                )
+                cells.append({
+                    "key": key,
+                    "label": label,
+                    "value": value,
+                    "name": field_name,
+                })
+                authorized[key] = authorized.get(key, 0) + value
+                row_total += value
+            auth_rows.append({
+                "organization": organization,
+                "cells": cells,
+                "total": row_total,
+            })
+        auth_cells = []
+        for key, label in PARADE_RANK_COLUMNS:
+            value = authorized.get(key, 0)
+            auth_cells.append({"key": key, "label": label, "value": value})
+        unit = get_unit(self.request.user)
+        return {
+            "rank_columns": PARADE_RANK_COLUMNS,
+            "absence_columns": PARADE_ABSENCE_COLUMNS,
+            "battalion_name": unit.organization_name if unit else "1 BIR",
+            "auth_rows": auth_rows,
+>>>>>>> backup/local-full-wip
             "auth_cells": auth_cells,
             "authorized_total": sum(cell["value"] for cell in auth_cells),
             "rows": rows,
@@ -750,14 +889,42 @@ class ParadeStateEditView(SoldierAccessMixin, View):
     def get(self, request, *args, **kwargs):
         return self.render_page(self.get_object())
 
+    def save_matrix(self, request, parade_state):
+        authorized_total = empty_rank_counts()
+        with transaction.atomic():
+            for organization in self.get_organizations():
+                posted = empty_rank_counts()
+                absent = empty_rank_counts()
+                authorized = empty_rank_counts()
+                for key, _label in PARADE_RANK_COLUMNS:
+                    posted[key] = self.number(
+                        request.POST.get(f"posted_{organization.pk}_{key}")
+                    )
+                    absent[key] = self.number(
+                        request.POST.get(f"absent_{organization.pk}_{key}")
+                    )
+                    authorized[key] = self.number(
+                        request.POST.get(f"auth_{organization.pk}_{key}")
+                    )
+                    authorized_total[key] += authorized[key]
+                ParadeStateCompany.objects.update_or_create(
+                    parade_state=parade_state,
+                    organization=organization,
+                    defaults={
+                        "authorized_strength": authorized,
+                        "posted_strength": posted,
+                        "absent_strength": absent,
+                    },
+                )
+            parade_state.authorized_strength = authorized_total
+            parade_state.save(update_fields=["authorized_strength", "updated_at"])
+        log_change(request.user, parade_state, "Parade state figures saved.")
+        messages.success(request, "Parade state saved.")
+
     def post(self, request, *args, **kwargs):
         parade_state = self.get_object()
-        if request.POST.get("refresh"):
-            parade_state = generate_parade_state(
-                request.user,
-                parade_state.report_date,
-                refresh=True,
-            )
+        if request.POST.get("save_matrix"):
+            self.save_matrix(request, parade_state)
             return redirect("duty:parade_state_edit", pk=parade_state.pk)
 
         if request.POST.get("delete_absence"):

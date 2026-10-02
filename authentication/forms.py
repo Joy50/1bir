@@ -183,7 +183,7 @@ class UserCreateForm(forms.ModelForm):
 
         labels = {
             "name": "Full Name",
-            "organizations": "Organizations",
+            "organizations": "Access organizations",
             "sign": "Signature",
             "photo": "Photo",
             "is_active": "Active",
@@ -201,7 +201,8 @@ class UserCreateForm(forms.ModelForm):
         )
         self.fields["organizations"].required = False
         self.fields["organizations"].help_text = (
-            "A user can belong to more than one organization."
+            "Organizations control what this login can see, not where a soldier is posted. "
+            "Assign the Unit to see the whole unit, or a company to see that company and below."
         )
         self.fields["is_active"].initial = True
 
@@ -338,7 +339,7 @@ class UserUpdateForm(forms.ModelForm):
 
         labels = {
             "name": "Full Name",
-            "organizations": "Organizations",
+            "organizations": "Access organizations",
             "sign": "Signature",
             "photo": "Photo",
             "is_active": "Active",
@@ -356,7 +357,8 @@ class UserUpdateForm(forms.ModelForm):
         )
         self.fields["organizations"].required = False
         self.fields["organizations"].help_text = (
-            "A user can belong to more than one organization."
+            "Organizations control what this login can see, not where a soldier is posted. "
+            "Assign the Unit to see the whole unit, or a company to see that company and below."
         )
         self.fields["password"].help_text = (
             "Leave blank to keep the current password."

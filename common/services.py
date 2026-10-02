@@ -5,7 +5,7 @@ from .models import AnnualPerformanceReport, Person, Rank
 
 def get_admin_statistics():
     return {
-        "persons": Person.objects.count(),
+        "persons": Person.objects.on_strength().count(),
         "ranks": Rank.objects.count(),
         "reports": AnnualPerformanceReport.objects.count(),
         "users": User.objects.count(),

@@ -34,8 +34,14 @@ PORTAL_SECTIONS = {
             },
             {
                 "title": "Create Organization",
-                "text": "Add battalion, company, and other unit structures.",
+                "text": "Add companies, platoons, and sections under the unit.",
                 "url_name": "common:create_organization",
+                "admin_only": True,
+            },
+            {
+                "title": "Create ERE Organization",
+                "text": "Add named ERE destinations. Postings to these organizations wait for the CO to approve and accept.",
+                "url_name": "common:create_ere",
                 "admin_only": True,
             },
             {
@@ -150,12 +156,12 @@ PORTAL_SECTIONS = {
         "items": [
             {
                 "title": "Daily Parade State",
-                "text": "Authorized, posted, absent, and present strength with absence details.",
+                "text": "Enter authorized, posted, and absent strength by company.",
                 "url_name": "duty:parade_state_list",
             },
             {
                 "title": "Soldier Posting",
-                "text": "CO posts a soldier. An officer of the receiving unit accepts him.",
+                "text": "Company officers post a soldier. The receiving company accepts him; ERE postings wait for the CO.",
                 "url_name": "duty:posting_list",
                 "roles": ("admin", "co", "officer"),
             },
@@ -167,7 +173,7 @@ PORTAL_SECTIONS = {
             },
             {
                 "title": "Duty Map",
-                "text": "CO view of who is standing which post on OpenStreetMap.",
+                "text": "CO view of who is standing which post on the live duty map.",
                 "url_name": "duty:map",
                 "roles": ("admin", "co"),
             },
@@ -238,13 +244,17 @@ PORTAL_SECTIONS = {
         "icon": "bi-people",
         "description": "Personnel, leave, parade state, duty state, postings, and service particulars.",
         "path_prefixes": (
+<<<<<<< HEAD
             "/soldiers", "/training/leave", "/parade-state", "/postings",
+=======
+            "/soldiers", "/search", "/training/leave", "/parade-state", "/postings",
+>>>>>>> backup/local-full-wip
             "/duty/", "/duty/assign", "/duty/map", "/duty/roster",
         ),
         "items": [
             {
                 "title": "Parade State",
-                "text": "View authorized, posted, absent, and present battalion strength.",
+                "text": "Enter authorized, posted, and absent strength by company.",
                 "url_name": "duty:parade_state_list",
             },
             {
@@ -271,8 +281,19 @@ PORTAL_SECTIONS = {
             },
             {
                 "title": "Posting Record",
-                "text": "View current and historical soldier posting records.",
+                "text": "Company posting orders, receiving-company acceptance, and CO approval for ERE.",
                 "url_name": "duty:posting_list",
+            },
+            {
+                "title": "ERE Organizations",
+                "text": "Add named ERE destinations. Postings to these organizations wait for the CO to approve and accept.",
+                "url_name": "common:create_ere",
+                "roles": ("admin", "co"),
+            },
+            {
+                "title": "Unit Search",
+                "text": "Ask across every soldier field: courses, leave, duty, rank, and company.",
+                "url_name": "common:search",
             },
             {
                 "title": "Svc Particulars",
@@ -313,7 +334,11 @@ PORTAL_SECTIONS = {
         "label": "Misc",
         "icon": "bi-grid",
         "description": "User administration, master data, logs, monitoring, and miscellaneous services.",
+<<<<<<< HEAD
         "path_prefixes": ("/users", "/dashboard"),
+=======
+        "path_prefixes": ("/users", "/dashboard", "/ranks", "/organizations", "/ere", "/education-levels"),
+>>>>>>> backup/local-full-wip
         "items": [
             {
                 "title": "Manage Dashboard",

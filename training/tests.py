@@ -311,7 +311,11 @@ class RelatedFormTemplateTests(TestCase):
 
 
 def make_state_board_tree(prefix):
+<<<<<<< HEAD
     unit = make_org(f"{prefix} Unit", kind=Organization.KIND_UNIT)
+=======
+    unit = make_org("1 BIR")
+>>>>>>> backup/local-full-wip
     company = make_org(
         f"{prefix} Company",
         parent=unit,
@@ -335,7 +339,11 @@ class TrainingStateBoardTests(TestCase):
 
     def test_ipft_summary_shows_unit_and_company_not_platoon(self):
         unit, company, platoon = make_state_board_tree("IPFT Board")
+<<<<<<< HEAD
         make_soldier(unit, army_number="BA-IPFT-U", name="Unit HQ Soldier")
+=======
+        make_soldier(company, army_number="BA-IPFT-U", name="Coy HQ Soldier")
+>>>>>>> backup/local-full-wip
         make_soldier(platoon, army_number="BA-IPFT-P", name="Platoon Soldier")
         admin = make_user("ipftboard", role=User.ROLE_ADMIN)
         self.client.force_login(admin)
@@ -344,7 +352,11 @@ class TrainingStateBoardTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         labels = [str(row["label"]) for row in response.context["summary_rows"]]
+<<<<<<< HEAD
         self.assertIn(str(unit), labels)
+=======
+        self.assertNotIn(str(unit), labels)
+>>>>>>> backup/local-full-wip
         self.assertIn(str(company), labels)
         self.assertNotIn(str(platoon), labels)
         self.assertNotContains(response, "Coy HQ")
@@ -353,8 +365,12 @@ class TrainingStateBoardTests(TestCase):
         posted = {
             str(row["label"]): row["posted"] for row in response.context["summary_rows"]
         }
+<<<<<<< HEAD
         self.assertEqual(posted[str(unit)], 1)
         self.assertEqual(posted[str(company)], 1)
+=======
+        self.assertEqual(posted[str(company)], 2)
+>>>>>>> backup/local-full-wip
 
     def test_ipft_company_filter_includes_platoon_soldiers(self):
         _unit, company, platoon = make_state_board_tree("IPFT Drill")
@@ -382,7 +398,11 @@ class TrainingStateBoardTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         labels = [str(row["label"]) for row in response.context["classification_rows"]]
+<<<<<<< HEAD
         self.assertIn(str(unit), labels)
+=======
+        self.assertNotIn(str(unit), labels)
+>>>>>>> backup/local-full-wip
         self.assertIn(str(company), labels)
         self.assertNotIn(str(platoon), labels)
         self._assert_board_dropdown(response, unit, company, platoon)
@@ -397,7 +417,11 @@ class TrainingStateBoardTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         labels = [str(row["label"]) for row in response.context["rows"]]
+<<<<<<< HEAD
         self.assertIn(str(unit), labels)
+=======
+        self.assertNotIn(str(unit), labels)
+>>>>>>> backup/local-full-wip
         self.assertIn(str(company), labels)
         self.assertNotIn(str(platoon), labels)
         self._assert_board_dropdown(response, unit, company, platoon)
@@ -412,7 +436,11 @@ class TrainingStateBoardTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         labels = [str(row["label"]) for row in response.context["rows"]]
+<<<<<<< HEAD
         self.assertIn(str(unit), labels)
+=======
+        self.assertNotIn(str(unit), labels)
+>>>>>>> backup/local-full-wip
         self.assertIn(str(company), labels)
         self.assertNotIn(str(platoon), labels)
         self._assert_board_dropdown(response, unit, company, platoon)
@@ -434,3 +462,83 @@ class TrainingStateBoardTests(TestCase):
         self.assertEqual(filtered.status_code, 200)
         army_numbers = [soldier.army_number for soldier in filtered.context["soldiers"]]
         self.assertIn("BA-QUAL-P", army_numbers)
+<<<<<<< HEAD
+=======
+
+
+@override_settings(STORAGES=STORAGES)
+class CatalogDropdownTests(TestCase):
+    def setUp(self):
+        self.company = make_org("A Company", parent=make_org("1 BIR"))
+        self.soldier = make_soldier(self.company, army_number="BA-CAT")
+        self.admin = make_user("catalog_admin", role=User.ROLE_ADMIN)
+        self.client.force_login(self.admin)
+
+    def test_yearly_plan_shows_four_cycles_side_by_side(self):
+        page = self.client.get(
+            reverse("training:yearly_plan_edit", args=[self.soldier.pk])
+        )
+        self.assertEqual(page.status_code, 200)
+        self.assertEqual(len(page.context["cycle_fields"]), 4)
+        self.assertContains(page, "col-lg-3")
+        self.assertContains(page, "Set all four cycles together")
+
+    def test_enlist_form_starts_with_four_yearly_plan_cycles(self):
+        page = self.client.get(reverse("common:soldier_create"))
+        self.assertEqual(page.status_code, 200)
+        formset = dict(page.context["training_formsets"])["Yearly Career Plan"]
+        self.assertEqual(formset.total_form_count(), 4)
+        cycles = [form.initial.get("cycle") for form in formset.forms]
+        self.assertEqual(
+            cycles,
+            ["1st Cycle", "2nd Cycle", "3rd Cycle", "4th Cycle"],
+        )
+
+    def test_competition_form_uses_dropdowns_without_pass_fail(self):
+        from training.catalog import COMPETITION_NAMES
+        from training.forms import SportsTrainingForm
+
+        form = SportsTrainingForm()
+        self.assertNotIn("type_of_comp", form.fields)
+        names = [value for value, _label in form.fields["name_of_comp"].choices if value]
+        self.assertEqual(names, COMPETITION_NAMES)
+        self.assertIn("Kabadi", names)
+        self.assertIn("Aslt Course", names)
+        medals = [
+            value
+            for value, _label in form.fields["significant_achievement"].choices
+            if value
+        ]
+        self.assertEqual(medals, ["GOLD MEDAL", "SILVER MEDAL", "BRONZE MEDAL"])
+        page = self.client.get(reverse("training:sports_edit", args=[self.soldier.pk]))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, "Kabadi")
+        self.assertNotContains(page, "id_sports-0-type_of_comp")
+
+    def test_cadre_and_course_catalog_and_results(self):
+        from training.catalog import CADRE_RESULT_CHOICES, COURSE_RESULT_CHOICES
+        from training.forms import IndividualQualCourseForm
+        from training.models import IndividualCourseName
+
+        self.assertTrue(
+            IndividualCourseName.objects.filter(name="BTT (Inf)").exists()
+        )
+        self.assertTrue(
+            IndividualCourseName.objects.filter(name="UNMOC").exists()
+        )
+        form = IndividualQualCourseForm()
+        results = [value for value, _label in form.fields["result"].choices if value]
+        self.assertEqual(results, [value for value, _label in CADRE_RESULT_CHOICES])
+        self.assertEqual(
+            [value for value, _label in COURSE_RESULT_CHOICES],
+            ["A", "B+", "B"],
+        )
+        page = self.client.get(
+            reverse("training:qual_edit", args=[self.soldier.pk])
+        )
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, "BTT (Inf)")
+        self.assertContains(page, "UNMOC")
+        self.assertContains(page, "data-qual-result")
+
+>>>>>>> backup/local-full-wip

@@ -5,6 +5,7 @@ from .models import (
     AppointmentHistory,
     CivilEducation,
     CivilEducationLevel,
+    EREOrganization,
     Family,
     MedicalCategory,
     MobileNumber,
@@ -44,14 +45,33 @@ class OrganizationForm(StyledModelForm):
             "parent_organization": "Parent organization",
         }
         help_texts = {
+<<<<<<< HEAD
             "unit_kind": "Unit contains battalions, a battalion contains companies, a company contains platoons, and a platoon contains sections.",
             "parent_organization": "Leave blank for a Unit. A Battalion sits under a Unit. A Company sits under a Battalion or a Unit.",
+=======
+            "unit_kind": "A unit has companies. A company has platoons, and a platoon has sections. Add ERE names on the ERE Organizations page.",
+            "parent_organization": "Leave blank for the Unit. A company sits under the unit, a platoon under a company, and a section under a platoon.",
+>>>>>>> backup/local-full-wip
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        unit_exists = Organization.objects.filter(
+            unit_kind=Organization.KIND_UNIT
+        ).exists()
+        excluded = {Organization.KIND_ERE}
+        if unit_exists and (
+            not self.instance.pk or self.instance.unit_kind != Organization.KIND_UNIT
+        ):
+            excluded.add(Organization.KIND_UNIT)
+        if not self.instance.pk or self.instance.unit_kind != Organization.KIND_ERE:
+            self.fields["unit_kind"].choices = [
+                choice
+                for choice in Organization.KIND_CHOICES
+                if choice[0] not in excluded
+            ]
         parents = Organization.objects.exclude(
-            unit_kind=Organization.KIND_SECTION
+            unit_kind__in=(Organization.KIND_SECTION, Organization.KIND_ERE)
         ).order_by("organization_name")
         if self.instance.pk:
             parents = parents.exclude(pk=self.instance.pk)
@@ -67,6 +87,27 @@ class OrganizationForm(StyledModelForm):
         if cleaned_data.get("unit_kind") == Organization.KIND_UNIT:
             cleaned_data["parent_organization"] = None
         return cleaned_data
+<<<<<<< HEAD
+=======
+
+
+class EREOrganizationForm(StyledModelForm):
+    class Meta:
+        model = EREOrganization
+        fields = ("name",)
+        labels = {"name": "ERE organization"}
+        help_texts = {
+            "name": "This name appears in the Post to list on posting orders.",
+        }
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "class": INPUT_CLASS,
+                    "placeholder": "CMH Dhaka, SI&T, etc.",
+                }
+            ),
+        }
+>>>>>>> backup/local-full-wip
 
 
 class EducationLevelForm(StyledModelForm):
@@ -79,7 +120,7 @@ class PersonForm(StyledModelForm):
     FIELD_GROUPS = (
         ("Identity & service", ("army_number", "rank", "name", "organization", "dob", "doe", "batch", "al1_13", "dor")),
         ("Conduct & posting", ("discipline", "punishment", "mission")),
-        ("Medical", ("height", "overweight")),
+        ("Medical", ("height_feet", "height_inches", "overweight")),
         ("Appointment & promotion", ("qualification_for_next_rank", "reason_unqualified")),
         ("Identification & online details", ("nid_number", "birth_certificate_number", "phone_registration_nid", "phone_imei", "social_media_links", "passport_number", "passport_type", "service_id_card_number")),
         ("Address & photo", ()),
@@ -113,7 +154,8 @@ class PersonForm(StyledModelForm):
             "discipline",
             "punishment",
             "mission",
-            "height",
+            "height_feet",
+            "height_inches",
             "overweight",
             "qualification_for_next_rank",
             "reason_unqualified",
@@ -136,9 +178,10 @@ class PersonForm(StyledModelForm):
             "photo",
         )
         labels = {
-            "organization": "Coy/ERE", "dob": "DOB", "doe": "DOE",
+            "organization": "Company / Platoon / Section / ERE", "dob": "DOB", "doe": "DOE",
             "al1_13": "AI 1/13", "dor": "DOR", "mission": "Mission (Yes/No)",
-            "height": "Height (Inch/CM)",
+            "height_feet": "Height (Feet)",
+            "height_inches": "Height (Inches)",
             "overweight": "Over Weight (KG/Pound)",
             "qualification_for_next_rank": "Qualified for Next Rank", "reason_unqualified": "Reason of Unqualified",
             "nid_number": "NID Number",
@@ -170,8 +213,16 @@ class PersonForm(StyledModelForm):
 
     def __init__(self, *args, organization_queryset=None, **kwargs):
         super().__init__(*args, **kwargs)
-        if organization_queryset is not None:
-            self.fields["organization"].queryset = organization_queryset
+        queryset = organization_queryset
+        if queryset is None:
+            queryset = Organization.objects.all()
+        self.fields["organization"].queryset = queryset.filter(
+            unit_kind__in=Organization.POSTING_KINDS
+        ).order_by("organization_name")
+        self.fields["organization"].help_text = (
+            "Post the soldier to a company, platoon, section, or ERE organization. "
+            "Unit HQ staff belong in HQ Company."
+        )
 
 
 class AppointmentHistoryForm(StyledModelForm):
@@ -257,14 +308,20 @@ MobileNumberFormSet = forms.inlineformset_factory(
 class FamilyForm(StyledModelForm):
     class Meta:
         model = Family
-        fields = ("relation_name", "occupation", "remarks")
+        fields = ("relation", "name", "mobile_number", "occupation", "remarks")
         labels = {
-            "relation_name": "Relation name",
+            "relation": "Relation",
+            "name": "Name",
+            "mobile_number": "Mobile number",
             "occupation": "Occupation",
             "remarks": "Remarks",
         }
         widgets = {
-            "relation_name": forms.TextInput(attrs={"class": INPUT_CLASS}),
+            "relation": forms.Select(attrs={"class": SELECT_CLASS}),
+            "name": forms.TextInput(attrs={"class": INPUT_CLASS}),
+            "mobile_number": forms.TextInput(
+                attrs={"class": INPUT_CLASS, "inputmode": "tel"}
+            ),
             "occupation": forms.TextInput(attrs={"class": INPUT_CLASS}),
             "remarks": forms.Textarea(attrs={"class": INPUT_CLASS, "rows": 2}),
         }
@@ -274,7 +331,7 @@ FamilyFormSet = forms.inlineformset_factory(
     Person,
     Family,
     form=FamilyForm,
-    fields=("relation_name", "occupation", "remarks"),
+    fields=("relation", "name", "mobile_number", "occupation", "remarks"),
     extra=1,
     can_delete=True,
 )
@@ -325,7 +382,10 @@ CivilEducationFormSet = forms.inlineformset_factory(
 class RankHistoryForm(StyledModelForm):
     class Meta:
         model = ServiceHistory
-        fields = ("rank", "organization", "start_date", "end_date")
+        fields = ("rank", "trade", "organization", "start_date", "end_date")
+        labels = {
+            "trade": "Trade",
+        }
         widgets = {
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "end_date": forms.DateInput(attrs={"type": "date"}),
@@ -341,7 +401,7 @@ RankHistoryFormSet = forms.inlineformset_factory(
     Person,
     ServiceHistory,
     form=RankHistoryForm,
-    fields=("rank", "organization", "start_date", "end_date"),
+    fields=("rank", "trade", "organization", "start_date", "end_date"),
     extra=1,
     can_delete=True,
 )

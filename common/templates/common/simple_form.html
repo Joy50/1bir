@@ -4,8 +4,9 @@
 
 {% block dashboard_content %}
 <div class="section-header">
-  <div class="section-eyebrow">Admin</div>
+  <div class="section-eyebrow">{{ section_eyebrow|default:"Admin" }}</div>
   <h1>{{ page_title }}</h1>
+  {% if page_intro %}<p class="text-secondary mb-0">{{ page_intro }}</p>{% endif %}
 </div>
 <div class="row g-4">
   <div class="col-lg-5">
@@ -17,6 +18,7 @@
             <div class="mb-3">
               <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
               {{ field }}
+              {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
               {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
             </div>
           {% endfor %}

@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from common.compat import make_check_constraint
 from common.models import Person
+from .catalog import ACHIEVEMENT_CHOICES, CADRE_RESULT_CHOICES, COMPETITION_CHOICES
 
 
 def current_year():
@@ -96,7 +97,11 @@ class UnitTrainingCyclePlan(models.Model):
         ]
 
     def __str__(self):
+<<<<<<< HEAD
         unit = self.organization or "Battalion"
+=======
+        unit = self.organization or "Unit"
+>>>>>>> backup/local-full-wip
         return f"{unit} - {self.year} {self.get_cycle_display()}"
 
 
@@ -291,6 +296,7 @@ class IndividualQualCourse(models.Model):
     result = models.CharField(
         max_length=255,
         blank=True,
+        choices=CADRE_RESULT_CHOICES,
     )
 
     class Meta:
@@ -589,7 +595,8 @@ class ParticipationInSportsTraining(models.Model):
 
     name_of_comp = models.CharField(
         max_length=255,
-        verbose_name="Name of Competition/Training"
+        choices=COMPETITION_CHOICES,
+        verbose_name="Competition",
     )
 
     type_of_comp = models.CharField(
@@ -602,7 +609,9 @@ class ParticipationInSportsTraining(models.Model):
 
     significant_achievement = models.CharField(
         max_length=255,
-        blank=True
+        choices=ACHIEVEMENT_CHOICES,
+        blank=True,
+        verbose_name="Achievement",
     )
 
     def __str__(self):

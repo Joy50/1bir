@@ -39,6 +39,18 @@
         </div>
 
         <div class="top-nav-actions">
+            <div class="top-nav-search" data-unit-search
+                 data-suggest-url="{% url 'common:search_suggest' %}"
+                 data-search-url="{% url 'common:search' %}">
+                <form action="{% url 'common:search' %}" method="get" role="search">
+                    <label class="visually-hidden" for="unitSearchInput">Search the unit</label>
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <input id="unitSearchInput" type="search" name="q" value="{{ search_query|default:'' }}"
+                           placeholder="Search soldiers, courses, leave…"
+                           autocomplete="off">
+                </form>
+                <div class="top-nav-search-panel" hidden></div>
+            </div>
             {% if active_section_label %}
             <span class="top-nav-context d-none d-md-inline">{{ active_section_label }}</span>
             {% endif %}
@@ -185,6 +197,122 @@
             event.returnValue = "";
           });
         });
+
+        (function setupUnitSearch() {
+          const root = document.querySelector("[data-unit-search]");
+          if (!root) {
+            return;
+          }
+          const input = root.querySelector("input[name='q']");
+          const panel = root.querySelector(".top-nav-search-panel");
+          const form = root.querySelector("form");
+          const suggestUrl = root.getAttribute("data-suggest-url");
+          const searchUrl = root.getAttribute("data-search-url");
+          if (!input || !panel || !suggestUrl) {
+            return;
+          }
+          let timer = null;
+          let items = [];
+          let active = -1;
+
+          function hidePanel() {
+            panel.hidden = true;
+            panel.innerHTML = "";
+            items = [];
+            active = -1;
+          }
+
+          function render(suggestions) {
+            panel.innerHTML = "";
+            items = suggestions || [];
+            active = -1;
+            if (!items.length) {
+              hidePanel();
+              return;
+            }
+            items.forEach(function (item, index) {
+              const button = document.createElement("button");
+              button.type = "button";
+              button.className = "top-nav-search-item";
+              button.setAttribute("data-index", String(index));
+              const label = document.createElement("span");
+              label.textContent = item.text;
+              button.appendChild(label);
+              if (item.type && item.type !== "query") {
+                const hint = document.createElement("small");
+                hint.textContent = item.type.replace("_", " ");
+                button.appendChild(hint);
+              }
+              button.addEventListener("mousedown", function (event) {
+                event.preventDefault();
+                choose(item);
+              });
+              panel.appendChild(button);
+            });
+            panel.hidden = false;
+          }
+
+          function choose(item) {
+            if (item.url) {
+              window.location.href = item.url;
+              return;
+            }
+            input.value = item.query || item.text;
+            hidePanel();
+            form.submit();
+          }
+
+          function fetchSuggestions() {
+            const query = input.value.trim();
+            fetch(suggestUrl + "?q=" + encodeURIComponent(query), {
+              headers: { "X-Requested-With": "XMLHttpRequest" },
+            })
+              .then(function (response) { return response.json(); })
+              .then(function (data) { render(data.suggestions || []); })
+              .catch(function () { hidePanel(); });
+          }
+
+          input.addEventListener("input", function () {
+            window.clearTimeout(timer);
+            timer = window.setTimeout(fetchSuggestions, 180);
+          });
+          input.addEventListener("focus", function () {
+            if (input.value.trim() || !items.length) {
+              fetchSuggestions();
+            }
+          });
+          input.addEventListener("keydown", function (event) {
+            const buttons = panel.querySelectorAll(".top-nav-search-item");
+            if (event.key === "Escape") {
+              hidePanel();
+              return;
+            }
+            if (event.key === "ArrowDown" && buttons.length) {
+              event.preventDefault();
+              active = Math.min(active + 1, buttons.length - 1);
+            } else if (event.key === "ArrowUp" && buttons.length) {
+              event.preventDefault();
+              active = Math.max(active - 1, 0);
+            } else if (event.key === "Enter" && active >= 0 && items[active]) {
+              event.preventDefault();
+              choose(items[active]);
+              return;
+            } else {
+              return;
+            }
+            buttons.forEach(function (button, index) {
+              button.classList.toggle("is-active", index === active);
+            });
+          });
+          document.addEventListener("click", function (event) {
+            if (!root.contains(event.target)) {
+              hidePanel();
+            }
+          });
+          if (searchUrl && window.location.pathname.indexOf("/search") === 0) {
+            input.focus();
+          }
+        })();
       })();
     </script>
     {% block extra_js %}{% endblock %}

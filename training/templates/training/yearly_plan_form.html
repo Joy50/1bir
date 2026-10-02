@@ -7,7 +7,7 @@
   <div class="section-eyebrow">Training // Yearly Plan</div>
   <h1>Edit Yearly Career Plan</h1>
   <p class="text-secondary mb-0">
-    Update cycle options for {{ soldier.name }}.
+    Update all four cycles for {{ soldier.name }} on one row.
   </p>
 </div>
 
@@ -52,10 +52,12 @@
         </div>
       </div>
 
-      <div class="form-eyebrow mb-3">Cycle Plan</div>
-      <div class="row">
+      <p class="text-secondary small mb-3">
+        Set all four cycles together, then save once.
+      </p>
+      <div class="row g-3">
         {% for field_name, field in cycle_fields %}
-          <div class="col-md-6 mb-3">
+          <div class="col-6 col-lg-3">
             <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
             {{ field }}
             {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}

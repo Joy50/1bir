@@ -30,6 +30,11 @@ urlpatterns = [
     path("duty/map/", views.DutyMapView.as_view(), name="map"),
     path("duty/map/report/", views.DutyTourReportView.as_view(), name="report_tour"),
     path("parade-state/", views.ParadeStateListView.as_view(), name="parade_state_list"),
+    path(
+        "parade-state/create/",
+        views.ParadeStateCreateView.as_view(),
+        name="parade_state_create",
+    ),
     path("parade-state/<int:pk>/", views.ParadeStateEditView.as_view(), name="parade_state_edit"),
     path("postings/", views.SoldierPostingListView.as_view(), name="posting_list"),
     path("postings/create/", views.SoldierPostingCreateView.as_view(), name="posting_create"),

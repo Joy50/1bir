@@ -55,11 +55,31 @@ def get_accessible_organization_ids(user):
     if getattr(user, "is_admin", False) or getattr(user, "is_co", False):
         return None
     return set(get_accessible_organizations(user).values_list("pk", flat=True))
+<<<<<<< HEAD
+=======
+
+
+def get_posting_organizations(user=None):
+    """Companies of the unit, plus ERE organizations, for posting orders."""
+    unit = Organization.objects.filter(unit_kind=Organization.KIND_UNIT).first()
+    queryset = Organization.objects.filter(
+        unit_kind__in=(Organization.KIND_COMPANY, Organization.KIND_ERE)
+    ).select_related("parent_organization")
+    if unit is not None:
+        queryset = queryset.filter(parent_organization=unit)
+    return queryset.order_by("unit_kind", "organization_name")
+>>>>>>> backup/local-full-wip
 
 
 def get_accessible_companies(user):
     return get_accessible_organizations(user).filter(
         unit_kind=Organization.KIND_COMPANY
+    )
+
+
+def get_posting_record_organizations(user):
+    return get_accessible_organizations(user).filter(
+        unit_kind__in=(Organization.KIND_COMPANY, Organization.KIND_ERE)
     )
 
 
@@ -75,23 +95,25 @@ def get_company_of(organization):
     return None
 
 
-PARADE_BOARD_KINDS = (
-    Organization.KIND_UNIT,
-    Organization.KIND_BATTALION,
-    Organization.KIND_COMPANY,
-)
+PARADE_BOARD_KINDS = (Organization.KIND_COMPANY,)
+BOARD_FILTER_KINDS = (Organization.KIND_UNIT, Organization.KIND_COMPANY)
 
 
 def get_parade_organizations(user):
+    return get_accessible_organizations(user).filter(
+        unit_kind=Organization.KIND_COMPANY
+    ).order_by("organization_name")
+
+
+def get_board_organizations(user):
     from django.db.models import Case, IntegerField, Value, When
 
     return get_accessible_organizations(user).filter(
-        unit_kind__in=PARADE_BOARD_KINDS
+        unit_kind__in=BOARD_FILTER_KINDS
     ).annotate(
         parade_rank=Case(
             When(unit_kind=Organization.KIND_UNIT, then=Value(0)),
-            When(unit_kind=Organization.KIND_BATTALION, then=Value(1)),
-            default=Value(2),
+            default=Value(1),
             output_field=IntegerField(),
         )
     ).order_by("parade_rank", "organization_name")
@@ -105,30 +127,28 @@ def organization_lookup():
 
 
 def rollup_to_parade_organization(organization, orgs_by_id=None):
-    """Map a platoon or section onto its company, or onto the unit/battalion."""
+    """Map a platoon or section onto its company. The unit is not a parade row."""
     if orgs_by_id is None:
         orgs_by_id = organization_lookup()
     if organization is None:
         return None
     current = organization if hasattr(organization, "unit_kind") else orgs_by_id.get(organization)
-    fallback = current
     seen = set()
     while current is not None and current.pk not in seen:
         seen.add(current.pk)
         if current.unit_kind == Organization.KIND_COMPANY:
             return current
-        if current.unit_kind in (Organization.KIND_UNIT, Organization.KIND_BATTALION):
-            fallback = current
         parent_id = current.parent_organization_id
         current = orgs_by_id.get(parent_id) if parent_id else None
-    return fallback
+    return None
 
 
-def get_battalion(user=None):
-    queryset = Organization.objects.all()
+def get_unit(user=None):
+    queryset = Organization.objects.filter(unit_kind=Organization.KIND_UNIT)
     if user is not None:
         accessible = get_accessible_organizations(user)
         queryset = queryset.filter(pk__in=accessible.values("pk"))
+<<<<<<< HEAD
     battalion = queryset.filter(
         unit_kind=Organization.KIND_BATTALION
     ).order_by("organization_name").first()
@@ -137,3 +157,25 @@ def get_battalion(user=None):
     return queryset.filter(
         unit_kind=Organization.KIND_UNIT
     ).order_by("organization_name").first()
+=======
+    return queryset.order_by("organization_name").first()
+
+
+def get_battalion(user=None):
+    return get_unit(user)
+
+
+def get_or_create_hq_company(unit=None):
+    unit = unit or get_unit()
+    if unit is None:
+        return None
+    company, _created = Organization.objects.get_or_create(
+        organization_name=Organization.HQ_COMPANY_NAME,
+        parent_organization=unit,
+        defaults={"unit_kind": Organization.KIND_COMPANY},
+    )
+    if company.unit_kind != Organization.KIND_COMPANY:
+        company.unit_kind = Organization.KIND_COMPANY
+        company.save(update_fields=["unit_kind"])
+    return company
+>>>>>>> backup/local-full-wip

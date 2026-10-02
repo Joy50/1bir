@@ -81,7 +81,11 @@ def build_parade_counts(report_date):
         lambda: {key: 0 for key, _label in PARADE_ABSENCE_COLUMNS}
     )
 
+<<<<<<< HEAD
     people = list(Person.objects.select_related("rank", "organization"))
+=======
+    people = list(Person.objects.on_strength().select_related("rank", "organization"))
+>>>>>>> backup/local-full-wip
     orgs_by_id = organization_lookup()
     for person in people:
         bucket = rollup_to_parade_organization(person.organization, orgs_by_id)
@@ -120,6 +124,7 @@ def rollup_posted_totals(posted_by_org, organization_ids=None):
     return totals
 
 
+<<<<<<< HEAD
 @transaction.atomic
 def generate_parade_state(user, report_date=None, refresh=False):
     """Build or refresh a daily parade state from personnel and leave data."""
@@ -132,10 +137,37 @@ def generate_parade_state(user, report_date=None, refresh=False):
     absent = counts["absent"]
     details = counts["details"]
     authorized = rollup_posted_totals(posted)
+=======
+def company_authorized_counts(organization):
+    values = empty_rank_counts()
+    stored = organization.authorized_strength or {}
+    for key in values:
+        try:
+            values[key] = max(0, int(stored.get(key) or 0))
+        except (TypeError, ValueError):
+            values[key] = 0
+    return values
+
+
+@transaction.atomic
+def generate_parade_state(user, report_date=None, refresh=False):
+    """Create a blank daily parade state. Saved figures are never overwritten."""
+    report_date = report_date or timezone.localdate()
+    state = ParadeState.objects.filter(report_date=report_date).first()
+    companies = list(
+        Organization.objects.filter(unit_kind=Organization.KIND_COMPANY).order_by(
+            "organization_name"
+        )
+    )
+    authorized_by_org = {
+        company.pk: company_authorized_counts(company) for company in companies
+    }
+>>>>>>> backup/local-full-wip
     if state is None:
         state = ParadeState.objects.create(
             report_date=report_date,
             created_by=user,
+<<<<<<< HEAD
             authorized_strength=authorized,
         )
     else:
@@ -155,13 +187,21 @@ def generate_parade_state(user, report_date=None, refresh=False):
     state.company_states.exclude(organization_id__in=organization_ids).delete()
     for organization_id in organization_ids:
         ParadeStateCompany.objects.update_or_create(
+=======
+            authorized_strength=rollup_posted_totals(authorized_by_org),
+        )
+    existing_ids = set(state.company_states.values_list("organization_id", flat=True))
+    for company in companies:
+        if company.pk in existing_ids:
+            continue
+        ParadeStateCompany.objects.create(
+>>>>>>> backup/local-full-wip
             parade_state=state,
-            organization_id=organization_id,
-            defaults={
-                "posted_strength": posted[organization_id],
-                "absent_strength": absent[organization_id],
-                "absence_details": details[organization_id],
-            },
+            organization=company,
+            authorized_strength=authorized_by_org[company.pk],
+            posted_strength=empty_rank_counts(),
+            absent_strength=empty_rank_counts(),
+            absence_details={},
         )
     return state
 
@@ -189,7 +229,7 @@ def get_or_create_open_tour():
 
 
 def scoped_soldiers(user):
-    queryset = Person.objects.select_related("rank", "organization").order_by(
+    queryset = Person.objects.on_strength().select_related("rank", "organization").order_by(
         "army_number"
     )
     allowed_ids = get_accessible_organization_ids(user)

@@ -69,6 +69,13 @@ class UserRoleTests(TestCase):
         self.assertTrue(co.can_approve_leave)
         self.assertFalse(officer.can_apply_leave)
         self.assertTrue(officer.can_approve_leave)
+        self.assertTrue(officer.can_create_posting)
+        self.assertTrue(co.can_create_posting)
+        self.assertFalse(clerk.can_create_posting)
+        self.assertTrue(admin.can_manage_ere)
+        self.assertTrue(co.can_manage_ere)
+        self.assertFalse(officer.can_manage_ere)
+        self.assertFalse(clerk.can_manage_ere)
         self.assertTrue(clerk.can_apply_leave)
         self.assertFalse(clerk.can_approve_leave)
 

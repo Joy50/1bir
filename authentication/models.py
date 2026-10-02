@@ -203,8 +203,16 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.can_command
 
     @property
+    def can_create_posting(self):
+        return self.role in {self.ROLE_ADMIN, self.ROLE_CO, self.ROLE_OFFICER}
+
+    @property
     def can_accept_posting(self):
-        return self.role in {self.ROLE_ADMIN, self.ROLE_OFFICER}
+        return self.role in {self.ROLE_ADMIN, self.ROLE_CO, self.ROLE_OFFICER}
+
+    @property
+    def can_manage_ere(self):
+        return self.role in {self.ROLE_ADMIN, self.ROLE_CO}
 
     @property
     def can_assign_duty(self):

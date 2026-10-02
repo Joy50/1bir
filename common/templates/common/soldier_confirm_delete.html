@@ -1,0 +1,29 @@
+{% extends "authentication/dashboard_base.html" %}
+
+{% block title %}Delete ID · {{ soldier.name }} · 1 BIR{% endblock %}
+
+{% block dashboard_content %}
+<div class="section-header">
+  <div class="section-eyebrow">Soldier</div>
+  <h1>Delete ID</h1>
+  <p class="text-secondary mb-0">
+    Use this after {{ soldier.army_number }} {{ soldier.name }} has been posted to another unit.
+    The ID is removed from the 1 BIR strength roll.
+  </p>
+</div>
+<div class="card form-panel">
+  <div class="card-body p-4">
+    <p class="mb-4">
+      <strong>{{ soldier.army_number }}</strong>
+      {{ soldier.rank }} {{ soldier.name }}
+      <span class="text-secondary">({{ soldier.organization }})</span>
+      will no longer appear on soldier lists, search, duty, or posting.
+    </p>
+    <form method="post" class="d-flex flex-wrap gap-2">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">Delete ID</button>
+      <a href="{% url 'common:soldier_detail' soldier.pk %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

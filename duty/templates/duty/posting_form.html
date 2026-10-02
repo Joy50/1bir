@@ -4,9 +4,9 @@
 
 {% block dashboard_content %}
 <div class="section-header">
-  <div class="section-eyebrow">CO posting</div>
+  <div class="section-eyebrow">Company posting</div>
   <h1>Generate Posting Order</h1>
-  <p class="text-secondary mb-0">The soldier stays on the current strength until an officer accepts the posting.</p>
+  <p class="text-secondary mb-0">A company officer generates the order. The receiving company accepts an internal posting. Postings to ERE organizations wait for the CO to approve and accept.</p>
 </div>
 <div class="card form-panel">
   <div class="card-body p-4">
@@ -20,6 +20,7 @@
       <div class="col-md-6">
         <label class="form-label" for="{{ form.to_organization.id_for_label }}">Post to</label>
         {{ form.to_organization }}
+        {% if form.to_organization.help_text %}<div class="form-text">{{ form.to_organization.help_text }}</div>{% endif %}
         {{ form.to_organization.errors }}
       </div>
       <div class="col-12">

@@ -24,6 +24,7 @@
       <noscript><button class="btn btn-outline-secondary ms-2" type="submit">Filter</button></noscript>
     </form>
     {% if can_post %}<a href="{% url 'duty:posting_create' %}" class="btn btn-bir">Generate Posting Order</a>{% endif %}
+    {% if request.user.can_manage_ere %}<a href="{% url 'common:create_ere' %}" class="btn btn-outline-secondary">ERE Organizations</a>{% endif %}
   </div>
 </div>
 
@@ -46,7 +47,7 @@
 
 {% if postings %}
 <div class="card form-panel mt-4"><div class="card-body p-4"><h2 class="h6 mb-3">Posting Requests</h2><div class="table-responsive"><table class="table table-ledger mb-0"><thead><tr><th>Soldier</th><th>From</th><th>To</th><th>Posted by</th><th>Status</th><th></th></tr></thead><tbody>
-  {% for posting in postings %}<tr><td>{{ posting.soldier.army_number }} {{ posting.soldier.name }}</td><td>{{ posting.from_organization }}</td><td>{{ posting.to_organization }}</td><td>{{ posting.posted_by.name|default:posting.posted_by }}</td><td><span class="badge badge-action badge-{{ posting.status }}">{{ posting.get_status_display }}</span></td><td class="text-end">{% if can_accept and posting.status == "pending" %}<form method="post" action="{% url 'duty:posting_decide' posting.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="accept"><button class="btn btn-bir btn-sm">Accept</button></form> <form method="post" action="{% url 'duty:posting_decide' posting.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="reject"><button class="btn btn-outline-secondary btn-sm">Reject</button></form>{% endif %}</td></tr>{% endfor %}
+  {% for posting in postings %}<tr><td>{{ posting.soldier.army_number }} {{ posting.soldier.name }}</td><td>{{ posting.from_organization }}</td><td>{{ posting.to_organization }}{% if posting.requires_co_decision %} <span class="badge badge-action">ERE</span>{% endif %}</td><td>{{ posting.posted_by.name|default:posting.posted_by }}</td><td><span class="badge badge-action badge-{{ posting.status }}">{{ posting.status_label }}</span></td><td class="text-end">{% if posting.user_can_decide and posting.status == "pending" %}<form method="post" action="{% url 'duty:posting_decide' posting.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="accept"><button class="btn btn-bir btn-sm">{% if posting.requires_co_decision %}Approve &amp; accept{% else %}Accept{% endif %}</button></form> <form method="post" action="{% url 'duty:posting_decide' posting.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="reject"><button class="btn btn-outline-secondary btn-sm">Reject</button></form>{% elif posting.status == "pending" and posting.requires_co_decision %}<span class="text-secondary small">Awaiting CO</span>{% elif posting.status == "pending" %}<span class="text-secondary small">Awaiting receiving company</span>{% endif %}</td></tr>{% endfor %}
 </tbody></table></div></div></div>
 {% endif %}
 {% endblock %}

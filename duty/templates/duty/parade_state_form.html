@@ -43,7 +43,34 @@
     .parade-table-wrap { overflow-x: auto; }
     .parade-table { min-width: 1120px; }
   }
+  .parade-table input.parade-input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    text-align: center;
+    padding: 0;
+    font-size: inherit;
+    line-height: inherit;
+    color: inherit;
+    box-shadow: none;
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+  .parade-table input.parade-input::-webkit-outer-spin-button,
+  .parade-table input.parade-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .parade-table input.parade-input:focus {
+    outline: 1px solid var(--gold, #c5a24a);
+    background: #fff;
+  }
   @media print {
+    .parade-table input.parade-input {
+      border: 0;
+      background: transparent;
+    }
     @page { size: A4 portrait; margin: 8mm; }
     .sidebar, .top-nav, .gold-ribbon, .section-header .btn, .parade-actions,
     .dashboard-messages, .parade-meta .col-md-4, .parade-meta .col-md-5 { display: none !important; }
@@ -73,33 +100,47 @@
   <div>
     <div class="section-eyebrow">A Matter · Parade State</div>
     <h1>Daily Parade State - 1 BIR</h1>
-    <p class="text-secondary mb-0">{{ parade_state.report_date|date:"d F Y" }} · Automatically generated from personnel and approved leave records.</p>
+    <p class="text-secondary mb-0">{{ parade_state.report_date|date:"d F Y" }} · Enter AUTH, posted, and absent figures by company. Present is posted minus absent.</p>
   </div>
+<<<<<<< HEAD
   <div class="d-flex gap-2">
+=======
+  <div class="d-flex gap-2 parade-actions">
+    <a class="btn btn-outline-secondary" href="{% url 'duty:parade_state_list' %}">All dates</a>
+>>>>>>> backup/local-full-wip
     <button type="button" class="btn btn-outline-secondary" onclick="window.print()">Print</button>
-    <form method="post" action="{% url 'duty:parade_state_edit' parade_state.pk %}">
-      {% csrf_token %}
-      <input type="hidden" name="refresh" value="1">
-      <button type="submit" class="btn btn-bir">Refresh this date</button>
-    </form>
+    <button type="submit" form="parade-matrix-form" class="btn btn-bir">Save parade state</button>
   </div>
 </div>
 
+<form method="post" action="{% url 'duty:parade_state_edit' parade_state.pk %}" id="parade-matrix-form">
+  {% csrf_token %}
+  <input type="hidden" name="save_matrix" value="1">
   <div class="card form-panel parade-report-card"><div class="card-body p-0">
+<<<<<<< HEAD
     <div class="p-4 pb-2 text-center"><h2 class="h5 mb-1">DAILY PARADE STATE - 1 BIR</h2><p class="small text-secondary mb-0">AUTH is the live posted strength of {{ battalion_name|default:"1 BIR" }}. Absent comes from approved leave active on this date.</p></div>
     <div class="table-responsive parade-table-wrap"><table class="table table-bordered parade-table mb-0"><thead><tr><th>Coy / State</th>{% for key, label in rank_columns %}<th>{{ label }}</th>{% endfor %}<th>Total</th></tr></thead><tbody>
       <tr class="parade-section-row"><th colspan="18">AUTH</th></tr>
       <tr><th>{{ battalion_name|default:"1 BIR" }}</th>{% for cell in auth_cells %}<td>{{ cell.value }}</td>{% endfor %}<td class="parade-total">{{ authorized_total }}</td></tr>
+=======
+    <div class="p-4 pb-2 text-center"><h2 class="h5 mb-1">DAILY PARADE STATE - 1 BIR</h2><p class="small text-secondary mb-0">Type company strength by rank. Totals and present update when you save.</p></div>
+    <div class="table-responsive parade-table-wrap"><table class="table table-bordered parade-table mb-0"><thead><tr><th>Coy / State</th>{% for key, label in rank_columns %}<th>{{ label }}</th>{% endfor %}<th>Total</th></tr></thead><tbody>
+      <tr class="parade-section-row"><th colspan="18">AUTH</th></tr>
+      {% for row in auth_rows %}
+        <tr><th>{{ row.organization }}</th>{% for cell in row.cells %}<td><input class="parade-input" type="number" min="0" name="{{ cell.name }}" value="{{ cell.value }}"></td>{% endfor %}<td class="parade-total">{{ row.total }}</td></tr>
+      {% endfor %}
+      <tr class="parade-total"><th>Total</th>{% for cell in auth_cells %}<td>{{ cell.value }}</td>{% endfor %}<td>{{ authorized_total }}</td></tr>
+>>>>>>> backup/local-full-wip
 
       <tr class="parade-section-row"><th colspan="18">POSTED</th></tr>
       {% for row in rows %}
-        <tr><th>{{ row.organization }}</th>{% for cell in row.rank_cells %}<td>{{ cell.posted }}</td>{% endfor %}<td class="parade-total">{{ row.posted_total }}</td></tr>
+        <tr><th>{{ row.organization }}</th>{% for cell in row.rank_cells %}<td><input class="parade-input" type="number" min="0" name="{{ cell.posted_name }}" value="{{ cell.posted }}"></td>{% endfor %}<td class="parade-total">{{ row.posted_total }}</td></tr>
       {% endfor %}
       <tr class="parade-total"><th>Total</th>{% for cell in rank_total_cells %}<td>{{ cell.posted }}</td>{% endfor %}<td>{{ posted_grand_total }}</td></tr>
 
       <tr class="parade-section-row"><th colspan="18">ABSENT</th></tr>
       {% for row in rows %}
-        <tr><th>{{ row.organization }}</th>{% for cell in row.rank_cells %}<td>{{ cell.absent }}</td>{% endfor %}<td class="parade-total">{{ row.absent_total }}</td></tr>
+        <tr><th>{{ row.organization }}</th>{% for cell in row.rank_cells %}<td><input class="parade-input" type="number" min="0" name="{{ cell.absent_name }}" value="{{ cell.absent }}"></td>{% endfor %}<td class="parade-total">{{ row.absent_total }}</td></tr>
       {% endfor %}
       <tr class="parade-total"><th>Total</th>{% for cell in rank_total_cells %}<td>{{ cell.absent }}</td>{% endfor %}<td>{{ absent_grand_total }}</td></tr>
 
@@ -110,6 +151,7 @@
       <tr class="parade-total"><th>Total</th>{% for cell in rank_total_cells %}<td>{{ cell.present }}</td>{% endfor %}<td>{{ present_grand_total }}</td></tr>
     </tbody></table></div>
   </div></div>
+</form>
 
   <div class="card form-panel parade-report-card">
     <div class="card-body p-0">
