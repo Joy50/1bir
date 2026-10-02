@@ -204,7 +204,15 @@ class SoldierAppointmentHistoryMixin:
         context["field_groups"] = [
             (title, [form[field_name] for field_name in field_names])
             for title, field_names in PersonForm.FIELD_GROUPS
+            if title != "Address & photo"
         ]
+        context["present_address_fields"] = [
+            form[field_name] for field_name in PersonForm.PRESENT_ADDRESS_FIELDS
+        ]
+        context["permanent_address_fields"] = [
+            form[field_name] for field_name in PersonForm.PERMANENT_ADDRESS_FIELDS
+        ]
+        context["photo_field"] = form["photo"]
         context.setdefault("appointment_formset", self.get_appointment_formset())
         context.setdefault("apr_formset", self.get_apr_formset())
         context.setdefault("mobile_formset", self.get_mobile_formset())

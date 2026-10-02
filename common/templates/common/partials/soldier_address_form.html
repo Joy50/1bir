@@ -1,0 +1,31 @@
+<div class="mb-3">
+  <div class="fw-semibold mb-2">Present address</div>
+  <div class="row g-3">
+    {% for field in present_address_fields %}
+      <div class="{% if field.name == 'present_area_road_house' %}col-12{% else %}col-md-6 col-lg-3{% endif %}">
+        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+<div class="mb-3">
+  <div class="fw-semibold mb-2">Permanent address</div>
+  <div class="row g-3">
+    {% for field in permanent_address_fields %}
+      <div class="{% if field.name == 'permanent_area_road_house' %}col-12{% else %}col-md-6 col-lg-3{% endif %}">
+        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+<div class="row g-3">
+  <div class="col-md-6">
+    <label class="form-label" for="{{ photo_field.id_for_label }}">{{ photo_field.label }}</label>
+    {{ photo_field }}
+    {% if photo_field.errors %}<div class="text-danger small">{{ photo_field.errors }}</div>{% endif %}
+  </div>
+</div>

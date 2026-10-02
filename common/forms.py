@@ -82,25 +82,20 @@ class PersonForm(StyledModelForm):
         ("Medical", ("height", "overweight")),
         ("Appointment & promotion", ("qualification_for_next_rank", "reason_unqualified")),
         ("Identification & online details", ("nid_number", "birth_certificate_number", "phone_registration_nid", "phone_imei", "social_media_links", "passport_number", "passport_type", "service_id_card_number")),
-        (
-            "Present address",
-            (
-                "present_district",
-                "present_upazila",
-                "present_thana",
-                "present_area_road_house",
-            ),
-        ),
-        (
-            "Permanent address",
-            (
-                "permanent_district",
-                "permanent_upazila",
-                "permanent_thana",
-                "permanent_area_road_house",
-            ),
-        ),
-        ("Photo", ("photo",)),
+        ("Address & photo", ()),
+    )
+
+    PRESENT_ADDRESS_FIELDS = (
+        "present_district",
+        "present_upazila",
+        "present_thana",
+        "present_area_road_house",
+    )
+    PERMANENT_ADDRESS_FIELDS = (
+        "permanent_district",
+        "permanent_upazila",
+        "permanent_thana",
+        "permanent_area_road_house",
     )
 
     class Meta:
