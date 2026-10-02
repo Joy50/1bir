@@ -77,7 +77,6 @@ def get_company_of(organization):
 
 PARADE_BOARD_KINDS = (
     Organization.KIND_UNIT,
-    Organization.KIND_BATTALION,
     Organization.KIND_COMPANY,
 )
 
@@ -90,7 +89,7 @@ def get_parade_organizations(user):
     ).annotate(
         parade_rank=Case(
             When(unit_kind=Organization.KIND_UNIT, then=Value(0)),
-            When(unit_kind=Organization.KIND_BATTALION, then=Value(1)),
+            When(unit_kind=Organization.KIND_COMPANY, then=Value(1)),
             default=Value(2),
             output_field=IntegerField(),
         )
@@ -105,7 +104,7 @@ def organization_lookup():
 
 
 def rollup_to_parade_organization(organization, orgs_by_id=None):
-    """Map a platoon or section onto its company, or onto the unit/battalion."""
+    """Map a platoon or section onto its company, or onto the unit."""
     if orgs_by_id is None:
         orgs_by_id = organization_lookup()
     if organization is None:
@@ -117,7 +116,7 @@ def rollup_to_parade_organization(organization, orgs_by_id=None):
         seen.add(current.pk)
         if current.unit_kind == Organization.KIND_COMPANY:
             return current
-        if current.unit_kind in (Organization.KIND_UNIT, Organization.KIND_BATTALION):
+        if current.unit_kind == Organization.KIND_UNIT:
             fallback = current
         parent_id = current.parent_organization_id
         current = orgs_by_id.get(parent_id) if parent_id else None
@@ -125,15 +124,11 @@ def rollup_to_parade_organization(organization, orgs_by_id=None):
 
 
 def get_battalion(user=None):
+    """Return the root Unit organization (legacy name kept for callers)."""
     queryset = Organization.objects.all()
     if user is not None:
         accessible = get_accessible_organizations(user)
         queryset = queryset.filter(pk__in=accessible.values("pk"))
-    battalion = queryset.filter(
-        unit_kind=Organization.KIND_BATTALION
-    ).order_by("organization_name").first()
-    if battalion:
-        return battalion
     return queryset.filter(
         unit_kind=Organization.KIND_UNIT
     ).order_by("organization_name").first()

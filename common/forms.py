@@ -79,7 +79,7 @@ class PersonForm(StyledModelForm):
     FIELD_GROUPS = (
         ("Identity & service", ("army_number", "rank", "name", "organization", "dob", "doe", "batch", "al1_13", "dor")),
         ("Conduct & posting", ("discipline", "punishment", "mission")),
-        ("Medical", ("height", "overweight")),
+        ("Medical", ("height_feet", "height_inches", "overweight")),
         ("Appointment & promotion", ("qualification_for_next_rank", "reason_unqualified")),
         ("Identification & online details", ("nid_number", "birth_certificate_number", "phone_registration_nid", "phone_imei", "social_media_links", "passport_number", "passport_type", "service_id_card_number")),
         ("Address & photo", ()),
@@ -113,7 +113,8 @@ class PersonForm(StyledModelForm):
             "discipline",
             "punishment",
             "mission",
-            "height",
+            "height_feet",
+            "height_inches",
             "overweight",
             "qualification_for_next_rank",
             "reason_unqualified",
@@ -138,7 +139,8 @@ class PersonForm(StyledModelForm):
         labels = {
             "organization": "Coy/ERE", "dob": "DOB", "doe": "DOE",
             "al1_13": "AI 1/13", "dor": "DOR", "mission": "Mission (Yes/No)",
-            "height": "Height (Inch/CM)",
+            "height_feet": "Height (feet)",
+            "height_inches": "Height (inches)",
             "overweight": "Over Weight (KG/Pound)",
             "qualification_for_next_rank": "Qualified for Next Rank", "reason_unqualified": "Reason of Unqualified",
             "nid_number": "NID Number",
@@ -257,14 +259,18 @@ MobileNumberFormSet = forms.inlineformset_factory(
 class FamilyForm(StyledModelForm):
     class Meta:
         model = Family
-        fields = ("relation_name", "occupation", "remarks")
+        fields = ("relation", "name", "mobile_number", "occupation", "remarks")
         labels = {
-            "relation_name": "Relation name",
+            "relation": "Relation",
+            "name": "Name",
+            "mobile_number": "Mobile number",
             "occupation": "Occupation",
             "remarks": "Remarks",
         }
         widgets = {
-            "relation_name": forms.TextInput(attrs={"class": INPUT_CLASS}),
+            "relation": forms.Select(attrs={"class": INPUT_CLASS}),
+            "name": forms.TextInput(attrs={"class": INPUT_CLASS}),
+            "mobile_number": forms.TextInput(attrs={"class": INPUT_CLASS}),
             "occupation": forms.TextInput(attrs={"class": INPUT_CLASS}),
             "remarks": forms.Textarea(attrs={"class": INPUT_CLASS, "rows": 2}),
         }
@@ -274,7 +280,7 @@ FamilyFormSet = forms.inlineformset_factory(
     Person,
     Family,
     form=FamilyForm,
-    fields=("relation_name", "occupation", "remarks"),
+    fields=("relation", "name", "mobile_number", "occupation", "remarks"),
     extra=1,
     can_delete=True,
 )

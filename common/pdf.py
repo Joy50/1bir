@@ -166,9 +166,15 @@ def build_soldier_pdf(soldier):
     story.extend(
         _section_table(
             "Family",
-            ["Relation", "Occupation", "Remarks"],
+            ["Relation", "Name", "Mobile", "Occupation", "Remarks"],
             [
-                [_text(item.relation_name), _text(item.occupation), _text(item.remarks)]
+                [
+                    _text(item.get_relation_display()),
+                    _text(item.name),
+                    _text(item.mobile_number),
+                    _text(item.occupation),
+                    _text(item.remarks),
+                ]
                 for item in soldier.family_members.all()
             ],
             styles,

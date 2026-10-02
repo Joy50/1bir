@@ -87,7 +87,7 @@ class PersonAdmin(admin.ModelAdmin):
         ("Conduct & posting", {"fields": ("discipline", "punishment", "mission")} ),
         ("Training-derived particulars", {"description": "These values are maintained in Training and are read-only here.", "fields": ("civil_education", "physical_efficiency", "army_courses", "cadres", "specialist_cadre")} ),
         ("Annual performance summary", {"description": "Manage individual APR entries using the inline below.", "fields": ("all_apr",)}),
-        ("Medical", {"fields": ("height", "overweight")} ),
+        ("Medical", {"fields": (("height_feet", "height_inches"), "overweight")} ),
         ("Promotion", {"fields": ("qualification_for_next_rank", "reason_unqualified")} ),
         ("Previous Unit/Organizations", {"description": "Generated from Appointment History entries below.", "fields": ("previous_unit_organizations",)}),
         (
