@@ -3,14 +3,6 @@ from datetime import date
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 
-
-def make_check_constraint(expression, name):
-    """CheckConstraint: Django 4.x uses check=, Django 5.1+ uses condition=."""
-    try:
-        return models.CheckConstraint(check=expression, name=name)
-    except TypeError:
-        return models.CheckConstraint(condition=expression, name=name)
-
 from .compat import make_check_constraint
 
 
@@ -55,12 +47,7 @@ class Organization(models.Model):
     POSTING_ORDER_KINDS = frozenset({KIND_COMPANY, KIND_ERE})
     PARENT_KINDS = {
         KIND_UNIT: frozenset(),
-<<<<<<< HEAD
-        KIND_BATTALION: frozenset({KIND_UNIT}),
-        KIND_COMPANY: frozenset({KIND_BATTALION, KIND_UNIT}),
-=======
         KIND_COMPANY: frozenset({KIND_UNIT}),
->>>>>>> backup/local-full-wip
         KIND_PLATOON: frozenset({KIND_COMPANY}),
         KIND_SECTION: frozenset({KIND_PLATOON}),
         KIND_ERE: frozenset({KIND_UNIT}),
@@ -116,8 +103,6 @@ class Organization(models.Model):
     def __str__(self):
         return self.organization_name
 
-<<<<<<< HEAD
-=======
     @property
     def is_posting_place(self):
         return self.unit_kind in self.POSTING_KINDS
@@ -126,7 +111,6 @@ class Organization(models.Model):
     def is_ere(self):
         return self.unit_kind == self.KIND_ERE
 
->>>>>>> backup/local-full-wip
     def allowed_parent_kinds(self):
         return self.PARENT_KINDS.get(self.unit_kind, frozenset())
 
@@ -194,8 +178,6 @@ class Organization(models.Model):
             return kinds[0]
         return " or ".join(kinds)
 
-<<<<<<< HEAD
-=======
 
 class EREOrganization(models.Model):
     """Named extra-regimental employment destinations a soldier can be posted to."""
@@ -258,7 +240,6 @@ class EREOrganization(models.Model):
                 org.unit_kind = Organization.KIND_ERE
                 org.save(update_fields=["organization_name", "unit_kind"])
 
->>>>>>> backup/local-full-wip
 
 class CivilEducationLevel(models.Model):
     level_name = models.CharField(max_length=100, unique=True)
@@ -389,8 +370,6 @@ class Person(models.Model):
         super().clean()
         if self.dob and self.doe and self.doe <= self.dob:
             raise ValidationError({"doe": "Date of enrollment must be after date of birth."})
-<<<<<<< HEAD
-=======
         organization = self.organization
         if organization is not None and not organization.is_posting_place:
             raise ValidationError(
@@ -401,7 +380,6 @@ class Person(models.Model):
                     )
                 }
             )
->>>>>>> backup/local-full-wip
         self._normalize_optional_unique_fields()
 
     def _normalize_optional_unique_fields(self):
@@ -434,7 +412,6 @@ class Person(models.Model):
     @property
     def service_years(self):
         return self.years_since(self.doe)
-<<<<<<< HEAD
 
     @staticmethod
     def _address_summary(district, upazila, thana, area_road_house):
@@ -462,8 +439,6 @@ class Person(models.Model):
             self.permanent_thana,
             self.permanent_area_road_house,
         )
-=======
->>>>>>> backup/local-full-wip
 
     @property
     def civil_education(self):
