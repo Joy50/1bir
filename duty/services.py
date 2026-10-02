@@ -179,7 +179,6 @@ def generate_parade_state(user, report_date=None, refresh=False):
         Organization.objects.filter(
             unit_kind__in=(
                 Organization.KIND_UNIT,
-                Organization.KIND_BATTALION,
                 Organization.KIND_COMPANY,
             )
         ).values_list("pk", flat=True)

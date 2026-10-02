@@ -5,7 +5,6 @@ from .models import (
     AppointmentHistory,
     CivilEducation,
     CivilEducationLevel,
-    EREOrganization,
     Family,
     MedicalCategory,
     MobileNumber,
@@ -45,33 +44,14 @@ class OrganizationForm(StyledModelForm):
             "parent_organization": "Parent organization",
         }
         help_texts = {
-<<<<<<< HEAD
-            "unit_kind": "Unit contains battalions, a battalion contains companies, a company contains platoons, and a platoon contains sections.",
-            "parent_organization": "Leave blank for a Unit. A Battalion sits under a Unit. A Company sits under a Battalion or a Unit.",
-=======
-            "unit_kind": "A unit has companies. A company has platoons, and a platoon has sections. Add ERE names on the ERE Organizations page.",
-            "parent_organization": "Leave blank for the Unit. A company sits under the unit, a platoon under a company, and a section under a platoon.",
->>>>>>> backup/local-full-wip
+            "unit_kind": "Unit → Company → Platoon → Section. ERE organizations sit under the Unit.",
+            "parent_organization": "Leave blank for a Unit. Companies, platoons, and sections need a parent.",
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        unit_exists = Organization.objects.filter(
-            unit_kind=Organization.KIND_UNIT
-        ).exists()
-        excluded = {Organization.KIND_ERE}
-        if unit_exists and (
-            not self.instance.pk or self.instance.unit_kind != Organization.KIND_UNIT
-        ):
-            excluded.add(Organization.KIND_UNIT)
-        if not self.instance.pk or self.instance.unit_kind != Organization.KIND_ERE:
-            self.fields["unit_kind"].choices = [
-                choice
-                for choice in Organization.KIND_CHOICES
-                if choice[0] not in excluded
-            ]
         parents = Organization.objects.exclude(
-            unit_kind__in=(Organization.KIND_SECTION, Organization.KIND_ERE)
+            unit_kind=Organization.KIND_SECTION
         ).order_by("organization_name")
         if self.instance.pk:
             parents = parents.exclude(pk=self.instance.pk)
@@ -87,27 +67,6 @@ class OrganizationForm(StyledModelForm):
         if cleaned_data.get("unit_kind") == Organization.KIND_UNIT:
             cleaned_data["parent_organization"] = None
         return cleaned_data
-<<<<<<< HEAD
-=======
-
-
-class EREOrganizationForm(StyledModelForm):
-    class Meta:
-        model = EREOrganization
-        fields = ("name",)
-        labels = {"name": "ERE organization"}
-        help_texts = {
-            "name": "This name appears in the Post to list on posting orders.",
-        }
-        widgets = {
-            "name": forms.TextInput(
-                attrs={
-                    "class": INPUT_CLASS,
-                    "placeholder": "CMH Dhaka, SI&T, etc.",
-                }
-            ),
-        }
->>>>>>> backup/local-full-wip
 
 
 class EducationLevelForm(StyledModelForm):
@@ -178,10 +137,10 @@ class PersonForm(StyledModelForm):
             "photo",
         )
         labels = {
-            "organization": "Company / Platoon / Section / ERE", "dob": "DOB", "doe": "DOE",
+            "organization": "Coy/ERE", "dob": "DOB", "doe": "DOE",
             "al1_13": "AI 1/13", "dor": "DOR", "mission": "Mission (Yes/No)",
-            "height_feet": "Height (Feet)",
-            "height_inches": "Height (Inches)",
+            "height_feet": "Height (feet)",
+            "height_inches": "Height (inches)",
             "overweight": "Over Weight (KG/Pound)",
             "qualification_for_next_rank": "Qualified for Next Rank", "reason_unqualified": "Reason of Unqualified",
             "nid_number": "NID Number",
@@ -213,16 +172,8 @@ class PersonForm(StyledModelForm):
 
     def __init__(self, *args, organization_queryset=None, **kwargs):
         super().__init__(*args, **kwargs)
-        queryset = organization_queryset
-        if queryset is None:
-            queryset = Organization.objects.all()
-        self.fields["organization"].queryset = queryset.filter(
-            unit_kind__in=Organization.POSTING_KINDS
-        ).order_by("organization_name")
-        self.fields["organization"].help_text = (
-            "Post the soldier to a company, platoon, section, or ERE organization. "
-            "Unit HQ staff belong in HQ Company."
-        )
+        if organization_queryset is not None:
+            self.fields["organization"].queryset = organization_queryset
 
 
 class AppointmentHistoryForm(StyledModelForm):
@@ -317,11 +268,9 @@ class FamilyForm(StyledModelForm):
             "remarks": "Remarks",
         }
         widgets = {
-            "relation": forms.Select(attrs={"class": SELECT_CLASS}),
+            "relation": forms.Select(attrs={"class": INPUT_CLASS}),
             "name": forms.TextInput(attrs={"class": INPUT_CLASS}),
-            "mobile_number": forms.TextInput(
-                attrs={"class": INPUT_CLASS, "inputmode": "tel"}
-            ),
+            "mobile_number": forms.TextInput(attrs={"class": INPUT_CLASS}),
             "occupation": forms.TextInput(attrs={"class": INPUT_CLASS}),
             "remarks": forms.Textarea(attrs={"class": INPUT_CLASS, "rows": 2}),
         }
@@ -382,10 +331,7 @@ CivilEducationFormSet = forms.inlineformset_factory(
 class RankHistoryForm(StyledModelForm):
     class Meta:
         model = ServiceHistory
-        fields = ("rank", "trade", "organization", "start_date", "end_date")
-        labels = {
-            "trade": "Trade",
-        }
+        fields = ("rank", "organization", "start_date", "end_date")
         widgets = {
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "end_date": forms.DateInput(attrs={"type": "date"}),
@@ -401,7 +347,7 @@ RankHistoryFormSet = forms.inlineformset_factory(
     Person,
     ServiceHistory,
     form=RankHistoryForm,
-    fields=("rank", "trade", "organization", "start_date", "end_date"),
+    fields=("rank", "organization", "start_date", "end_date"),
     extra=1,
     can_delete=True,
 )
