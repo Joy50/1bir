@@ -47,8 +47,8 @@
         <div class="col-md-6"><div class="small text-secondary text-uppercase">Organization</div><div class="fw-medium">{{ soldier.organization }}</div></div>
         <div class="col-md-6"><div class="small text-secondary text-uppercase">AL-1/13</div><div class="fw-medium">{{ soldier.get_al1_13_display|default:"—" }}</div></div>
         <div class="col-12"><div class="small text-secondary text-uppercase">Previous Unit/Organizations</div><div>{{ soldier.previous_unit_organizations|default:"—" }}</div></div>
-        <div class="col-12"><div class="small text-secondary text-uppercase">Present Address</div><div>{{ soldier.present_address|default:"—" }}</div></div>
-        <div class="col-12"><div class="small text-secondary text-uppercase">Permanent Address</div><div>{{ soldier.permanent_address|default:"—" }}</div></div>
+        {% include "common/partials/address_block.html" with title="Present Address" district=soldier.present_district upazila=soldier.present_upazila thana=soldier.present_thana area_road_house=soldier.present_area_road_house %}
+        {% include "common/partials/address_block.html" with title="Permanent Address" district=soldier.permanent_district upazila=soldier.permanent_upazila thana=soldier.permanent_thana area_road_house=soldier.permanent_area_road_house %}
       </div>
     </div></div>
   </div>

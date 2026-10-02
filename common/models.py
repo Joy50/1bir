@@ -221,8 +221,20 @@ class Person(models.Model):
         null=True,
         unique=True,
     )
-    present_address = models.TextField(blank=True, null=True)
-    permanent_address = models.TextField(blank=True, null=True)
+    present_district = models.CharField(max_length=120, blank=True)
+    present_upazila = models.CharField(max_length=120, blank=True)
+    present_thana = models.CharField(max_length=120, blank=True)
+    present_area_road_house = models.TextField(
+        "present area/road/house",
+        blank=True,
+    )
+    permanent_district = models.CharField(max_length=120, blank=True)
+    permanent_upazila = models.CharField(max_length=120, blank=True)
+    permanent_thana = models.CharField(max_length=120, blank=True)
+    permanent_area_road_house = models.TextField(
+        "permanent area/road/house",
+        blank=True,
+    )
 
     class Meta:
         ordering = ["army_number"]
@@ -272,6 +284,33 @@ class Person(models.Model):
     @property
     def service_years(self):
         return self.years_since(self.doe)
+
+    @staticmethod
+    def _address_summary(district, upazila, thana, area_road_house):
+        parts = [
+            str(value).strip()
+            for value in (district, upazila, thana, area_road_house)
+            if value and str(value).strip()
+        ]
+        return ", ".join(parts)
+
+    @property
+    def present_address(self):
+        return self._address_summary(
+            self.present_district,
+            self.present_upazila,
+            self.present_thana,
+            self.present_area_road_house,
+        )
+
+    @property
+    def permanent_address(self):
+        return self._address_summary(
+            self.permanent_district,
+            self.permanent_upazila,
+            self.permanent_thana,
+            self.permanent_area_road_house,
+        )
 
     @property
     def civil_education(self):
