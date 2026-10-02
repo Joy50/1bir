@@ -5,6 +5,7 @@ from .models import (
     AppointmentHistory,
     CivilEducation,
     CivilEducationLevel,
+    EREOrganization,
     Family,
     MedicalCategory,
     MobileNumber,
@@ -55,6 +56,13 @@ class RankAdmin(admin.ModelAdmin):
     search_fields = ("rank_name",)
     list_display = ("rank_name", "category")
     list_filter = ("category",)
+
+
+@admin.register(EREOrganization)
+class EREOrganizationAdmin(admin.ModelAdmin):
+    search_fields = ("name",)
+    list_display = ("name", "organization")
+    readonly_fields = ("organization",)
 
 
 @admin.register(Organization)
