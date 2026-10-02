@@ -12,6 +12,11 @@ urlpatterns = [
         name="create_organization",
     ),
     path(
+        "ere-organizations/create/",
+        views.EREOrganizationCreateView.as_view(),
+        name="create_ere_organization",
+    ),
+    path(
         "education-levels/create/",
         views.EducationLevelCreateView.as_view(),
         name="create_education_level",

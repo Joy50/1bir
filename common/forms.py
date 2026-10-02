@@ -5,6 +5,7 @@ from .models import (
     AppointmentHistory,
     CivilEducation,
     CivilEducationLevel,
+    EREOrganization,
     Family,
     MedicalCategory,
     MobileNumber,
@@ -67,6 +68,13 @@ class OrganizationForm(StyledModelForm):
         if cleaned_data.get("unit_kind") == Organization.KIND_UNIT:
             cleaned_data["parent_organization"] = None
         return cleaned_data
+
+
+class EREOrganizationForm(StyledModelForm):
+    class Meta:
+        model = EREOrganization
+        fields = ("name",)
+        labels = {"name": "ERE organization name"}
 
 
 class EducationLevelForm(StyledModelForm):

@@ -17,6 +17,7 @@ from .forms import (
     AppointmentHistoryFormSet,
     CivilEducationFormSet,
     EducationLevelForm,
+    EREOrganizationForm,
     FamilyFormSet,
     MedicalCategoryFormSet,
     MobileNumberFormSet,
@@ -25,7 +26,7 @@ from .forms import (
     RankHistoryFormSet,
     RankForm,
 )
-from .models import CivilEducationLevel, Organization, Person, Rank
+from .models import CivilEducationLevel, EREOrganization, Organization, Person, Rank
 from .pdf import build_soldier_pdf
 from .scoping import get_accessible_organization_ids, get_accessible_organizations
 from training.forms import (
@@ -265,6 +266,27 @@ class OrganizationCreateView(AdminPortalMixin, CreateView):
         response = super().form_valid(form)
         log_addition(self.request.user, self.object, "Organization created.")
         messages.success(self.request, "Organization added.")
+        return response
+
+
+class EREOrganizationCreateView(AdminPortalMixin, CreateView):
+    model = EREOrganization
+    form_class = EREOrganizationForm
+    template_name = "common/simple_form.html"
+    success_url = reverse_lazy("common:create_ere_organization")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["page_title"] = "Create ERE Organization"
+        context["existing_items"] = EREOrganization.objects.select_related(
+            "organization"
+        )
+        return context
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        log_addition(self.request.user, self.object, "ERE organization created.")
+        messages.success(self.request, "ERE organization added.")
         return response
 
 
